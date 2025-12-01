@@ -17,6 +17,9 @@ All rights reserved (see LICENSE).
 #endif
 
 #include "utils/helpers.h"
+#include "structures/typedefs.h"
+#include <cmath>
+
 
 namespace vroom::utils {
 
@@ -49,7 +52,7 @@ INIT get_init(std::string_view s) {
   if (s == "EARLIEST_DEADLINE") {
     return EARLIEST_DEADLINE;
   }
-  throw InputException("Invalid heuristic parameter in command-line.");
+  throw InputException("Недопустимый эвристический параметр в командной строке.");
 }
 
 SORT get_sort(std::string_view s) {
@@ -59,7 +62,7 @@ SORT get_sort(std::string_view s) {
   if (s == "COST") {
     return SORT::COST;
   }
-  throw InputException("Invalid heuristic parameter in command-line.");
+  throw InputException("Недопустимый эвристический параметр в командной строке.");
 }
 
 #ifdef LOG_LS_OPERATORS
@@ -127,7 +130,7 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
   }
 
   if ((tokens.size() != 3 && tokens.size() != 4) || tokens[0].size() != 1) {
-    throw InputException("Invalid heuristic parameter in command-line.");
+    throw InputException("Недопустимый эвристический параметр в командной строке.");
   }
 
   auto init = get_init(tokens[1]);
@@ -137,12 +140,12 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
     auto h = std::stoul(tokens[0]);
 
     if (h != 0 && h != 1) {
-      throw InputException("Invalid heuristic parameter in command-line.");
+      throw InputException("Недопустимый эвристический параметр в командной строке.");
     }
 
     auto regret_coeff = std::stof(tokens[2]);
     if (regret_coeff < 0) {
-      throw InputException("Invalid heuristic parameter in command-line.");
+      throw InputException("Недопустимый эвристический параметр в командной строке.");
     }
 
     return HeuristicParameters(static_cast<HEURISTIC>(h),
@@ -150,7 +153,7 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
                                regret_coeff,
                                sort);
   } catch (const std::exception&) {
-    throw InputException("Invalid heuristic parameter in command-line.");
+    throw InputException("Недопустимый эвристический параметр в командной строке.");
   }
 }
 
@@ -162,6 +165,96 @@ Priority priority_sum_for_route(const Input& input,
                          [&](auto sum, auto job_rank) {
                            return sum + input.jobs[job_rank].priority;
                          });
+}
+
+// Константы для настройки приоритета
+extern const Cost PRIORITY_POSITION_WEIGHT = 1000000000;  // Вес штрафа за неправильную позицию
+extern const double PRIORITY_INFLUENCE = 2.0;       // Влияние приоритета (0.0 - нет влияния, 1.0 - максимальное)
+
+// Функция расчета штрафа за позицию задания с учетом приоритета
+Cost calculate_priority_position_penalty(Index position, 
+                                        Priority job_priority, 
+                                        const std::vector<Index>& /* route */,  // Убираем warning
+                                        const Input& /* input */) {
+  if (job_priority == 0) {
+    return 0;
+  }
+
+  // Упрощенная логика: высокий приоритет должен быть в начале
+  // Если задание с приоритетом не в начале маршрута - большой штраф
+  if (job_priority > 0 && position > 0) {
+    // Штраф растет с каждой позицией от начала маршрута
+    Cost penalty = static_cast<Cost>(position) * PRIORITY_POSITION_WEIGHT * PRIORITY_INFLUENCE;
+    return penalty;
+  }
+  
+  return 0;
+}
+
+// Функция расчета общего штрафа приоритета для всего маршрута
+Cost calculate_route_priority_penalty(const std::vector<Index>& route, const Input& input) {
+  Cost total_penalty = 0;
+  
+  for (size_t i = 0; i < route.size(); ++i) {
+    const auto& job = input.jobs[route[i]];
+    total_penalty += calculate_priority_position_penalty(i, job.priority, route, input);
+  }
+  
+  return total_penalty;
+}
+
+// Функция для оценки улучшения приоритета при перестановке
+Cost priority_improvement_for_move(const std::vector<Index>& old_route,
+                                  const std::vector<Index>& new_route,
+                                  const Input& input) {
+  Cost old_penalty = calculate_route_priority_penalty(old_route, input);
+  Cost new_penalty = calculate_route_priority_penalty(new_route, input);
+  
+  // Возвращаем улучшение (отрицательное значение = ухудшение)
+  return old_penalty - new_penalty;
+}
+
+// Функция для проверки, улучшает ли вставка задания приоритет маршрута
+bool insertion_improves_priority(const std::vector<Index>& route,
+                                Index job_rank,
+                                Index insert_position,
+                                const Input& input) {
+  if (route.empty()) {
+    return true;
+  }
+  
+  // Создаем новый маршрут с вставленным заданием
+  std::vector<Index> new_route = route;
+  new_route.insert(new_route.begin() + insert_position, job_rank);
+  
+  Cost improvement = priority_improvement_for_move(route, new_route, input);
+  return improvement > 0;
+}
+
+// Функция для поиска оптимальной позиции по приоритету
+Index find_best_priority_position(const std::vector<Index>& route,
+                                 Index job_rank,
+                                 const Input& input) {
+  if (route.empty()) {
+    return 0;
+  }
+  
+  Index best_position = 0;
+  Cost best_penalty = std::numeric_limits<Cost>::max();
+  
+  const auto& job = input.jobs[job_rank];
+  
+  // Проверяем все возможные позиции
+  for (Index pos = 0; pos <= route.size(); ++pos) {
+    Cost penalty = calculate_priority_position_penalty(pos, job.priority, route, input);
+    
+    if (penalty < best_penalty) {
+      best_penalty = penalty;
+      best_position = pos;
+    }
+  }
+  
+  return best_position;
 }
 
 Eval route_eval_for_vehicle(const Input& input,
@@ -244,7 +337,7 @@ void check_priority(const Priority priority,
                     const Id id,
                     const std::string& type) {
   if (priority > MAX_PRIORITY) {
-    throw InputException("Invalid priority value for " + type + " " +
+    throw InputException("Недопустимое значение приоритета для " + type + " " +
                          std::to_string(id) + ".");
   }
 }

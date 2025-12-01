@@ -63,7 +63,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     // Use osrm-routed.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::OsrmRoutedWrapper>(profile, search->second);
@@ -74,7 +74,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     try {
       routing_wrapper = std::make_unique<routing::LibosrmWrapper>(profile);
     } catch (const osrm::exception& e) {
-      throw InputException("Invalid profile: " + profile);
+      throw InputException("Недопустимый профиль: " + profile);
     }
     break;
 #else
@@ -85,7 +85,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     // Use ORS http wrapper.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::OrsWrapper>(profile, search->second);
@@ -94,7 +94,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     // Use Valhalla http wrapper.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::ValhallaWrapper>(profile, search->second);
@@ -783,7 +783,7 @@ void Input::set_vehicle_steps_ranks() {
       if (step.type == STEP_TYPE::BREAK) {
         auto search = current_vehicle.break_id_to_rank.find(step.id);
         if (search == current_vehicle.break_id_to_rank.end()) {
-          throw InputException("Invalid break id " + std::to_string(step.id) +
+          throw InputException("Недопустимый идентификатор перерыва " + std::to_string(step.id) +
                                " for vehicle " +
                                std::to_string(current_vehicle.id) + ".");
         }
@@ -796,7 +796,7 @@ void Input::set_vehicle_steps_ranks() {
         case JOB_TYPE::SINGLE: {
           auto search = job_id_to_rank.find(step.id);
           if (search == job_id_to_rank.end()) {
-            throw InputException("Invalid job id " + std::to_string(step.id) +
+            throw InputException("Недопустимый идентификатор задания " + std::to_string(step.id) +
                                  " for vehicle " +
                                  std::to_string(current_vehicle.id) + ".");
           }
@@ -813,7 +813,7 @@ void Input::set_vehicle_steps_ranks() {
         case JOB_TYPE::PICKUP: {
           auto search = pickup_id_to_rank.find(step.id);
           if (search == pickup_id_to_rank.end()) {
-            throw InputException("Invalid pickup id " +
+            throw InputException("Недопустимый идентификатор забора " +
                                  std::to_string(step.id) + " for vehicle " +
                                  std::to_string(current_vehicle.id) + ".");
           }
@@ -831,7 +831,7 @@ void Input::set_vehicle_steps_ranks() {
         case JOB_TYPE::DELIVERY: {
           auto search = delivery_id_to_rank.find(step.id);
           if (search == delivery_id_to_rank.end()) {
-            throw InputException("Invalid delivery id " +
+            throw InputException("Недопустимый идентификатор доставки " +
                                  std::to_string(step.id) + " for vehicle " +
                                  std::to_string(current_vehicle.id) + ".");
           }

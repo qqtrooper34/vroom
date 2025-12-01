@@ -198,6 +198,32 @@ inline Eval in_place_delta_cost(const Input& input,
 Priority priority_sum_for_route(const Input& input,
                                 const std::vector<Index>& route);
 
+                                // Priority position functions
+Cost calculate_priority_position_penalty(Index position, 
+                                        Priority job_priority, 
+                                        const std::vector<Index>& route,
+                                        const Input& input);
+
+Cost calculate_route_priority_penalty(const std::vector<Index>& route, 
+                                     const Input& input);
+
+Cost priority_improvement_for_move(const std::vector<Index>& old_route,
+                                  const std::vector<Index>& new_route,
+                                  const Input& input);
+
+bool insertion_improves_priority(const std::vector<Index>& route,
+                                Index job_rank,
+                                Index insert_position,
+                                const Input& input);
+
+Index find_best_priority_position(const std::vector<Index>& route,
+                                 Index job_rank,
+                                 const Input& input);
+
+// Constants for priority configuration
+extern const Cost PRIORITY_POSITION_WEIGHT;
+extern const double PRIORITY_INFLUENCE;
+
 Eval route_eval_for_vehicle(const Input& input,
                             Index vehicle_rank,
                             const std::vector<Index>::const_iterator first_job,

@@ -887,7 +887,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
       }
     }
     if (!(single_jobs_deliveries <= vehicle.capacity)) {
-      throw InputException("Route over capacity for vehicle " +
+      throw InputException("Маршрут превышает вместимость транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
 
@@ -912,7 +912,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
       job_ranks.push_back(job_rank);
 
       if (!input.vehicle_ok_with_job(v, job_rank)) {
-        throw InputException("Missing skill or step out of reach for vehicle " +
+        throw InputException("Отсутствует навык или шаг недостижим для транспорта " +
                              std::to_string(vehicle.id) + " and job " +
                              std::to_string(job.id) + ".");
       }
@@ -940,7 +940,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
       case JOB_TYPE::DELIVERY: {
         auto search = expected_delivery_ranks.find(job_rank);
         if (search == expected_delivery_ranks.end()) {
-          throw InputException("Invalid shipment in route for vehicle " +
+          throw InputException("Недопустимая доставка в маршруте для транспорта " +
                                std::to_string(vehicle.id) + ".");
         }
         expected_delivery_ranks.erase(search);
@@ -952,7 +952,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
 
       // Check validity after this step wrt capacity.
       if (!(current_load <= vehicle.capacity)) {
-        throw InputException("Route over capacity for vehicle " +
+        throw InputException("Маршрут превышает вместимость транспорта " +
                              std::to_string(vehicle.id) + ".");
       }
     }
@@ -964,21 +964,21 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
         vehicle.eval(previous_index.value(), vehicle.end.value().index());
     }
     if (!vehicle.ok_for_travel_time(eval_sum.duration)) {
-      throw InputException("Route over max_travel_time for vehicle " +
+      throw InputException("Маршрут превышает максимальное время в пути для транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
     if (!vehicle.ok_for_distance(eval_sum.distance)) {
-      throw InputException("Route over max_distance for vehicle " +
+      throw InputException("Маршрут превышает максимальное расстояние для транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
 
     if (vehicle.max_tasks < job_ranks.size()) {
-      throw InputException("Too many tasks for vehicle " +
+      throw InputException("Слишком много заданий для транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
 
     if (!expected_delivery_ranks.empty()) {
-      throw InputException("Invalid shipment in route for vehicle " +
+      throw InputException("Недопустимая доставка в маршруте для транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
 
@@ -991,7 +991,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
                                               job_ranks.end(),
                                               0,
                                               0)) {
-        throw InputException("Infeasible route for vehicle " +
+        throw InputException("Невыполнимый маршрут для транспорта " +
                              std::to_string(vehicle.id) + ".");
       }
 

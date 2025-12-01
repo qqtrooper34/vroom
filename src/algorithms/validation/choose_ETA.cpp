@@ -221,7 +221,7 @@ Route choose_ETA(const Input& input,
     if (latest_date != std::numeric_limits<Duration>::max()) {
       const auto reach_time = relative_ETA[s];
       if (latest_date < reach_time) {
-        throw InputException("Infeasible route for vehicle " +
+        throw InputException("Невыполнимый маршрут для транспорта " +
                              std::to_string(v.id) + ".");
       }
       start_candidate = std::min(start_candidate, latest_date - reach_time);
@@ -264,7 +264,7 @@ Route choose_ETA(const Input& input,
         std::max(earliest_date, step.forced_service.after.value());
     }
     if (earliest_date > latest_dates[s]) {
-      throw InputException("Infeasible route for vehicle " +
+      throw InputException("Невыполнимый маршрут для транспорта " +
                            std::to_string(v.id) + ".");
     }
 
@@ -708,7 +708,7 @@ Route choose_ETA(const Input& input,
     const Duration UB = t_i_UB[i];
 
     if (UB < LB) {
-      throw InputException("Infeasible route for vehicle " +
+      throw InputException("Невыполнимый маршрут для транспорта " +
                            std::to_string(v.id) + ".");
     }
 
@@ -992,7 +992,7 @@ Route choose_ETA(const Input& input,
 
   auto status = glp_mip_status(lp);
   if (status == GLP_UNDEF || status == GLP_NOFEAS) {
-    throw InputException("Infeasible route for vehicle " +
+    throw InputException("Невыполнимый маршрут для транспорта " +
                          std::to_string(v.id) + ".");
   }
   // We should not get GLP_FEAS.
@@ -1042,7 +1042,7 @@ Route choose_ETA(const Input& input,
 
   status = glp_mip_status(lp);
   if (status == GLP_UNDEF || status == GLP_NOFEAS) {
-    throw InputException("Infeasible route for vehicle " +
+    throw InputException("Невыполнимый маршрут для транспорта " +
                          std::to_string(v.id) + ".");
   }
   // We should not get GLP_FEAS.

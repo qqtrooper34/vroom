@@ -66,7 +66,7 @@ Matrices LibosrmWrapper::get_matrices(const std::vector<Location>& locs) const {
                                   message.size() - snapping_error_base.size()));
       auto coordinates = "[" + std::to_string(locs[error_loc].lon()) + "," +
                          std::to_string(locs[error_loc].lat()) + "]";
-      throw RoutingException("Could not find route near location " +
+      throw RoutingException("Не удалось найти маршрут рядом с местоположением " +
                              coordinates);
     }
 
