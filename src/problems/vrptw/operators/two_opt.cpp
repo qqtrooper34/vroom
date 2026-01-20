@@ -32,8 +32,65 @@ TwoOpt::TwoOpt(const Input& input,
 }
 
 bool TwoOpt::is_valid() {
-  return cvrp::TwoOpt::is_valid() &&
-         _tw_t_route.is_valid_addition_for_tw(_input,
+  if (!cvrp::TwoOpt::is_valid()) {
+    return false;
+  }
+
+  // Check route_position constraints for jobs moving between routes
+  const auto s_first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto s_last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto t_first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto t_last_count = _sol_state.last_jobs_count[t_vehicle];
+
+  // Jobs from s_route[s_rank+1..end] go to t_route starting at t_rank+1
+  Index t_insert_pos = t_rank + 1;
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        // FIRST jobs cannot go to the tail of another route
+        if (t_insert_pos > t_first_count) {
+          return false;
+        }
+        break;
+      case ROUTE_POSITION::LAST:
+        // This should be fine as it's going to the end
+        break;
+      case ROUTE_POSITION::NONE:
+        // Normal jobs should not go into FIRST zone of target
+        if (t_first_count > 0 && t_insert_pos <= t_first_count) {
+          return false;
+        }
+        break;
+    }
+    ++t_insert_pos;
+  }
+
+  // Jobs from t_route[t_rank+1..end] go to s_route starting at s_rank+1
+  Index s_insert_pos = s_rank + 1;
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    const auto& job = _input.jobs[t_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        // FIRST jobs cannot go to the tail of another route
+        if (s_insert_pos > s_first_count) {
+          return false;
+        }
+        break;
+      case ROUTE_POSITION::LAST:
+        // This should be fine as it's going to the end
+        break;
+      case ROUTE_POSITION::NONE:
+        // Normal jobs should not go into FIRST zone of target
+        if (s_first_count > 0 && s_insert_pos <= s_first_count) {
+          return false;
+        }
+        break;
+    }
+    ++s_insert_pos;
+  }
+
+  return _tw_t_route.is_valid_addition_for_tw(_input,
                                               _s_delivery,
                                               s_route.begin() + s_rank + 1,
                                               s_route.end(),

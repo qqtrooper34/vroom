@@ -208,11 +208,68 @@ void IntraCrossExchange::compute_gain() {
 bool IntraCrossExchange::is_valid() {
   assert(_gain_upper_bound_computed);
 
+  // Check route_position constraints for cross exchange
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Helper lambda to check if a job can be at a given rank
+  auto is_valid_position = [&](Index job_rank, Index new_rank) {
+    const auto& job = _input.jobs[s_route[job_rank]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        return new_rank < first_count;
+      case ROUTE_POSITION::LAST:
+        return new_rank >= route_size - last_count;
+      case ROUTE_POSITION::NONE:
+        return (first_count == 0 || new_rank >= first_count) &&
+               (last_count == 0 || new_rank < route_size - last_count);
+    }
+    return true;
+  };
+
+  // Check s_normal_t_normal variant:
+  // s_rank job -> t_rank, s_rank+1 job -> t_rank+1
+  // t_rank job -> s_rank, t_rank+1 job -> s_rank+1
+  bool s_normal_t_normal_position_valid =
+    is_valid_position(s_rank, t_rank) &&
+    is_valid_position(s_rank + 1, t_rank + 1) &&
+    is_valid_position(t_rank, s_rank) &&
+    is_valid_position(t_rank + 1, s_rank + 1);
+
+  // Check s_normal_t_reverse variant:
+  // s_rank job -> t_rank, s_rank+1 job -> t_rank+1
+  // t_rank job -> s_rank+1, t_rank+1 job -> s_rank
+  bool s_normal_t_reverse_position_valid =
+    is_valid_position(s_rank, t_rank) &&
+    is_valid_position(s_rank + 1, t_rank + 1) &&
+    is_valid_position(t_rank, s_rank + 1) &&
+    is_valid_position(t_rank + 1, s_rank);
+
+  // Check s_reverse_t_normal variant:
+  // s_rank job -> t_rank+1, s_rank+1 job -> t_rank
+  // t_rank job -> s_rank, t_rank+1 job -> s_rank+1
+  bool s_reverse_t_normal_position_valid =
+    is_valid_position(s_rank, t_rank + 1) &&
+    is_valid_position(s_rank + 1, t_rank) &&
+    is_valid_position(t_rank, s_rank) &&
+    is_valid_position(t_rank + 1, s_rank + 1);
+
+  // Check s_reverse_t_reverse variant:
+  // s_rank job -> t_rank+1, s_rank+1 job -> t_rank
+  // t_rank job -> s_rank+1, t_rank+1 job -> s_rank
+  bool s_reverse_t_reverse_position_valid =
+    is_valid_position(s_rank, t_rank + 1) &&
+    is_valid_position(s_rank + 1, t_rank) &&
+    is_valid_position(t_rank, s_rank + 1) &&
+    is_valid_position(t_rank + 1, s_rank);
+
   const auto& s_v = _input.vehicles[s_vehicle];
   const auto& s_eval = _sol_state.route_evals[s_vehicle];
   const auto s_normal_t_normal_eval = _normal_s_gain + _normal_t_gain;
 
   s_normal_t_normal_is_valid =
+    s_normal_t_normal_position_valid &&
     s_v.ok_for_range_bounds(s_eval - s_normal_t_normal_eval) &&
     source.is_valid_addition_for_capacity_inclusion(_input,
                                                     _delivery,
@@ -227,6 +284,7 @@ bool IntraCrossExchange::is_valid() {
     const auto s_normal_t_reverse_eval = _reversed_s_gain + _normal_t_gain;
 
     s_normal_t_reverse_is_valid =
+      s_normal_t_reverse_position_valid &&
       s_v.ok_for_range_bounds(s_eval - s_normal_t_reverse_eval) &&
       source.is_valid_addition_for_capacity_inclusion(_input,
                                                       _delivery,
@@ -242,6 +300,7 @@ bool IntraCrossExchange::is_valid() {
   if (check_s_reverse && check_t_reverse) {
     const auto s_reversed_t_reversed_eval = _reversed_s_gain + _reversed_t_gain;
     s_reverse_t_reverse_is_valid =
+      s_reverse_t_reverse_position_valid &&
       s_v.ok_for_range_bounds(s_eval - s_reversed_t_reversed_eval) &&
       source.is_valid_addition_for_capacity_inclusion(_input,
                                                       _delivery,
@@ -257,6 +316,7 @@ bool IntraCrossExchange::is_valid() {
     const auto s_reverse_t_normal_eval = _normal_s_gain + _reversed_t_gain;
 
     s_reverse_t_normal_is_valid =
+      s_reverse_t_normal_position_valid &&
       s_v.ok_for_range_bounds(s_eval - s_reverse_t_normal_eval) &&
       source.is_valid_addition_for_capacity_inclusion(_input,
                                                       _delivery,

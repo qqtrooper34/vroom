@@ -69,6 +69,75 @@ void IntraRelocate::compute_gain() {
 }
 
 bool IntraRelocate::is_valid() {
+  // Check route_position constraint for all affected jobs
+  const auto& moved_job = _input.jobs[s_route[s_rank]];
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Check the moved job's new position
+  switch (moved_job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (t_rank >= first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      if (t_rank < route_size - last_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && t_rank < first_count) ||
+          (last_count > 0 && t_rank >= route_size - last_count)) {
+        return false;
+      }
+      break;
+  }
+
+  // Check jobs that shift when we move the job
+  // When moving from s_rank to t_rank:
+  // - If s_rank < t_rank: jobs at [s_rank+1..t_rank] shift down by 1 (to [s_rank..t_rank-1])
+  // - If s_rank > t_rank: jobs at [t_rank..s_rank-1] shift up by 1 (to [t_rank+1..s_rank])
+
+  if (s_rank < t_rank) {
+    // Jobs at positions [s_rank+1..t_rank] shift to [s_rank..t_rank-1]
+    for (Index i = s_rank + 1; i <= t_rank; ++i) {
+      const auto& job = _input.jobs[s_route[i]];
+      const auto new_pos = i - 1;
+      switch (job.route_position) {
+        case ROUTE_POSITION::FIRST:
+          if (new_pos >= first_count) return false;
+          break;
+        case ROUTE_POSITION::LAST:
+          if (new_pos < route_size - last_count) return false;
+          break;
+        case ROUTE_POSITION::NONE:
+          if ((first_count > 0 && new_pos < first_count) ||
+              (last_count > 0 && new_pos >= route_size - last_count)) return false;
+          break;
+      }
+    }
+  } else {
+    // Jobs at positions [t_rank..s_rank-1] shift to [t_rank+1..s_rank]
+    for (Index i = t_rank; i < s_rank; ++i) {
+      const auto& job = _input.jobs[s_route[i]];
+      const auto new_pos = i + 1;
+      switch (job.route_position) {
+        case ROUTE_POSITION::FIRST:
+          if (new_pos >= first_count) return false;
+          break;
+        case ROUTE_POSITION::LAST:
+          if (new_pos < route_size - last_count) return false;
+          break;
+        case ROUTE_POSITION::NONE:
+          if ((first_count > 0 && new_pos < first_count) ||
+              (last_count > 0 && new_pos >= route_size - last_count)) return false;
+          break;
+      }
+    }
+  }
+
   return is_valid_for_range_bounds() &&
          source.is_valid_addition_for_capacity_inclusion(_input,
                                                          _delivery,

@@ -44,6 +44,43 @@ void TSPFix::compute_gain() {
 bool TSPFix::is_valid() {
   bool valid = is_valid_for_source_range_bounds();
 
+  // Check route_position constraints for the new TSP order
+  if (valid) {
+    Index first_count = 0;
+    Index last_count = 0;
+    for (const auto& job_rank : tsp_route) {
+      const auto& job = _input.jobs[job_rank];
+      if (job.route_position == ROUTE_POSITION::FIRST) {
+        ++first_count;
+      } else if (job.route_position == ROUTE_POSITION::LAST) {
+        ++last_count;
+      }
+    }
+
+    const auto route_size = tsp_route.size();
+    for (Index rank = 0; rank < route_size && valid; ++rank) {
+      const auto& job = _input.jobs[tsp_route[rank]];
+      switch (job.route_position) {
+        case ROUTE_POSITION::FIRST:
+          if (rank >= first_count) {
+            valid = false;
+          }
+          break;
+        case ROUTE_POSITION::LAST:
+          if (rank < route_size - last_count) {
+            valid = false;
+          }
+          break;
+        case ROUTE_POSITION::NONE:
+          if ((first_count > 0 && rank < first_count) ||
+              (last_count > 0 && rank >= route_size - last_count)) {
+            valid = false;
+          }
+          break;
+      }
+    }
+  }
+
   if (valid) {
     const RawRoute route(_input, s_vehicle, _input.zero_amount().size());
 
@@ -60,7 +97,6 @@ bool TSPFix::is_valid() {
 
 void TSPFix::apply() {
   s_route = std::move(tsp_route);
-
   source.update_amounts(_input);
 }
 

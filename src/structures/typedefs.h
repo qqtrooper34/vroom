@@ -112,6 +112,9 @@ struct Server {
 // constraints.
 enum class JOB_TYPE : std::uint8_t { SINGLE, PICKUP, DELIVERY };
 
+// Route position constraint for jobs.
+enum class ROUTE_POSITION { NONE, FIRST, LAST };
+
 // Available location status.
 enum class STEP_TYPE : std::uint8_t { START, JOB, BREAK, END };
 
@@ -151,7 +154,8 @@ enum class VIOLATION : std::uint8_t {
   MISSING_BREAK,
   MAX_TRAVEL_TIME,
   MAX_LOAD,
-  MAX_DISTANCE
+  MAX_DISTANCE,
+  ROUTE_POSITION
 };
 
 enum OperatorName : std::uint8_t {

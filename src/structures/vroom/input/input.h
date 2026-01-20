@@ -54,6 +54,7 @@ private:
   bool _report_distances;
   bool _has_jobs{false};
   bool _has_shipments{false};
+  bool _has_route_position_constraints{false};
   std::unordered_map<std::string,
                      Matrix<UserDuration>,
                      StringHash,
@@ -170,6 +171,8 @@ public:
   bool has_jobs() const;
 
   bool has_shipments() const;
+
+  bool has_route_position_constraints() const;
 
   bool report_distances() const;
 

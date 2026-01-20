@@ -60,6 +60,9 @@ get_violations(const Violations& violations,
     case MAX_DISTANCE:
       cause = "max_distance";
       break;
+    case ROUTE_POSITION:
+      cause = "route_position";
+      break;
     default:
       assert(false);
     }

@@ -34,10 +34,48 @@ ThreeInsertions find_top_3_insertions(const Input& input,
                                       Index j,
                                       const Route& r) {
   const auto& v = input.vehicles[r.v_rank];
+  const auto& job = input.jobs[j];
+
+  // Count existing FIRST and LAST jobs in route (TAMS: route_position)
+  Index first_count = 0;
+  Index last_count = 0;
+  for (const auto& job_rank : r.route) {
+    const auto& existing_job = input.jobs[job_rank];
+    if (existing_job.route_position == ROUTE_POSITION::FIRST) {
+      ++first_count;
+    } else if (existing_job.route_position == ROUTE_POSITION::LAST) {
+      ++last_count;
+    }
+  }
+
+  const auto route_size = r.route.size();
 
   auto best_insertions = empty_three_insertions;
 
-  for (Index rank = 0; rank <= r.route.size(); ++rank) {
+  for (Index rank = 0; rank <= route_size; ++rank) {
+    // Check route_position constraint
+    bool position_valid = true;
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        position_valid = rank <= first_count;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (route_size == 0) {
+          position_valid = false;
+        } else {
+          position_valid = rank >= route_size - last_count;
+        }
+        break;
+      case ROUTE_POSITION::NONE:
+        position_valid = (first_count == 0 || rank >= first_count) &&
+                         (last_count == 0 || rank <= route_size - last_count);
+        break;
+    }
+
+    if (!position_valid) {
+      continue;
+    }
+
     InsertionOption current_insert =
       {utils::addition_cost(input, j, v, r.route, rank), rank};
 

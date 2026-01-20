@@ -35,6 +35,7 @@ struct Job {
   const TypeToDurationMap service_per_type;
   std::vector<Duration> setups;
   std::vector<Duration> services;
+  const ROUTE_POSITION route_position;
 
   // Constructor for regular one-stop job (JOB_TYPE::SINGLE).
   Job(Id id,
@@ -49,7 +50,8 @@ struct Job {
         std::vector<TimeWindow>(1, TimeWindow()),
       std::string description = "",
       const TypeToUserDurationMap& setup_per_type = TypeToUserDurationMap(),
-      const TypeToUserDurationMap& service_per_type = TypeToUserDurationMap());
+      const TypeToUserDurationMap& service_per_type = TypeToUserDurationMap(),
+      ROUTE_POSITION route_position = ROUTE_POSITION::NONE);
 
   // Constructor for pickup and delivery jobs (JOB_TYPE::PICKUP or
   // JOB_TYPE::DELIVERY).
@@ -65,7 +67,8 @@ struct Job {
         std::vector<TimeWindow>(1, TimeWindow()),
       std::string description = "",
       const TypeToUserDurationMap& setup_per_type = TypeToUserDurationMap(),
-      const TypeToUserDurationMap& service_per_type = TypeToUserDurationMap());
+      const TypeToUserDurationMap& service_per_type = TypeToUserDurationMap(),
+      ROUTE_POSITION route_position = ROUTE_POSITION::NONE);
 
   Index index() const {
     return location.index();

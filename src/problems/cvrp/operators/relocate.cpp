@@ -61,6 +61,39 @@ void Relocate::compute_gain() {
 
 bool Relocate::is_valid() {
   assert(gain_computed);
+
+  // Check route_position constraint for the relocated job in target route
+  const auto& job = _input.jobs[s_route[s_rank]];
+  const auto t_first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto t_last_count = _sol_state.last_jobs_count[t_vehicle];
+  const auto t_route_size = t_route.size();
+
+  bool position_valid = true;
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      // FIRST job must be inserted in first positions of target route
+      position_valid = t_rank <= t_first_count;
+      break;
+    case ROUTE_POSITION::LAST:
+      // LAST job must be inserted in last positions of target route
+      // Cannot be first job in empty route
+      if (t_route_size == 0) {
+        position_valid = false;
+      } else {
+        position_valid = t_rank >= t_route_size - t_last_count;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      // NONE job cannot be placed in FIRST or LAST zones
+      position_valid = (t_first_count == 0 || t_rank >= t_first_count) &&
+                       (t_last_count == 0 || t_rank <= t_route_size - t_last_count);
+      break;
+  }
+
+  if (!position_valid) {
+    return false;
+  }
+
   return is_valid_for_source_range_bounds() &&
          is_valid_for_target_range_bounds() &&
          target

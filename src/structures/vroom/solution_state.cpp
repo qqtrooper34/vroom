@@ -33,6 +33,8 @@ SolutionState::SolutionState(const Input& input)
     pd_gains(_nb_vehicles),
     matching_delivery_rank(_nb_vehicles),
     matching_pickup_rank(_nb_vehicles),
+    first_jobs_count(_nb_vehicles, 0),
+    last_jobs_count(_nb_vehicles, 0),
     cheapest_job_rank_in_routes_from(_nb_vehicles,
                                      std::vector<std::vector<Index>>(
                                        _nb_vehicles)),
@@ -58,6 +60,7 @@ template <class Route> void SolutionState::setup(const Route& r, Index v) {
   set_insertion_ranks(r, v);
   update_route_eval(r.route, v);
   update_route_bbox(r.route, v);
+  update_route_position_counts(r.route, v);
 }
 
 template <class Solution> void SolutionState::setup(const Solution& sol) {
@@ -654,6 +657,24 @@ void SolutionState::update_route_bbox(const std::vector<Index>& route,
       bbox.extend(loc.coordinates());
     });
   }
+}
+
+void SolutionState::update_route_position_counts(const std::vector<Index>& route,
+                                                  Index v) {
+  Index first_count = 0;
+  Index last_count = 0;
+
+  for (const auto& job_rank : route) {
+    const auto& job = _input.jobs[job_rank];
+    if (job.route_position == ROUTE_POSITION::FIRST) {
+      ++first_count;
+    } else if (job.route_position == ROUTE_POSITION::LAST) {
+      ++last_count;
+    }
+  }
+
+  first_jobs_count[v] = first_count;
+  last_jobs_count[v] = last_count;
 }
 
 template void SolutionState::setup(const std::vector<RawRoute>&);

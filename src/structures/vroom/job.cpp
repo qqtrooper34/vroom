@@ -23,7 +23,8 @@ Job::Job(Id id,
          const std::vector<TimeWindow>& tws,
          std::string description,
          const TypeToUserDurationMap& setup_per_type,
-         const TypeToUserDurationMap& service_per_type)
+         const TypeToUserDurationMap& service_per_type,
+         ROUTE_POSITION route_position)
   : location(location),
     id(id),
     type(JOB_TYPE::SINGLE),
@@ -36,7 +37,8 @@ Job::Job(Id id,
     tws(tws),
     description(std::move(description)),
     setup_per_type(utils::scale_from_user_duration(setup_per_type)),
-    service_per_type(utils::scale_from_user_duration(service_per_type)) {
+    service_per_type(utils::scale_from_user_duration(service_per_type)),
+    route_position(route_position) {
   utils::check_tws(tws, id, "job");
   utils::check_priority(priority, id, "job");
   utils::check_no_empty_keys(this->setup_per_type, id, "job", "setup_per_type");
@@ -57,7 +59,8 @@ Job::Job(Id id,
          const std::vector<TimeWindow>& tws,
          std::string description,
          const TypeToUserDurationMap& setup_per_type,
-         const TypeToUserDurationMap& service_per_type)
+         const TypeToUserDurationMap& service_per_type,
+         ROUTE_POSITION route_position)
   : location(location),
     id(id),
     type(type),
@@ -70,7 +73,8 @@ Job::Job(Id id,
     tws(tws),
     description(std::move(description)),
     setup_per_type(utils::scale_from_user_duration(setup_per_type)),
-    service_per_type(utils::scale_from_user_duration(service_per_type)) {
+    service_per_type(utils::scale_from_user_duration(service_per_type)),
+    route_position(route_position) {
   assert(type == JOB_TYPE::PICKUP || type == JOB_TYPE::DELIVERY);
   std::string type_str = (type == JOB_TYPE::PICKUP) ? "pickup" : "delivery";
   utils::check_tws(tws, id, type_str);

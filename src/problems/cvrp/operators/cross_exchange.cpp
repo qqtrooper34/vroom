@@ -224,6 +224,49 @@ void CrossExchange::compute_gain() {
 bool CrossExchange::is_valid() {
   assert(_gain_upper_bound_computed);
 
+  // Check route_position constraints for cross exchange
+  const auto s_first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto s_last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto t_first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto t_last_count = _sol_state.last_jobs_count[t_vehicle];
+  const auto s_route_size = s_route.size();
+  const auto t_route_size = t_route.size();
+
+  // Helper to check if a job can be at a given rank in a route
+  auto is_valid_position = [&](const Job& job, Index new_rank, Index first_c, Index last_c, Index route_sz) {
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        return new_rank < first_c;
+      case ROUTE_POSITION::LAST:
+        return new_rank >= route_sz - last_c;
+      case ROUTE_POSITION::NONE:
+        return (first_c == 0 || new_rank >= first_c) &&
+               (last_c == 0 || new_rank < route_sz - last_c);
+    }
+    return true;
+  };
+
+  // Check if target jobs can go to source route at s_rank, s_rank+1
+  const auto& t_job1 = _input.jobs[t_route[t_rank]];
+  const auto& t_job2 = _input.jobs[t_route[t_rank + 1]];
+  bool s_normal_pos_valid = is_valid_position(t_job1, s_rank, s_first_count, s_last_count, s_route_size) &&
+                            is_valid_position(t_job2, s_rank + 1, s_first_count, s_last_count, s_route_size);
+  bool s_reverse_pos_valid = is_valid_position(t_job2, s_rank, s_first_count, s_last_count, s_route_size) &&
+                             is_valid_position(t_job1, s_rank + 1, s_first_count, s_last_count, s_route_size);
+
+  // Check if source jobs can go to target route at t_rank, t_rank+1
+  const auto& s_job1 = _input.jobs[s_route[s_rank]];
+  const auto& s_job2 = _input.jobs[s_route[s_rank + 1]];
+  bool t_normal_pos_valid = is_valid_position(s_job1, t_rank, t_first_count, t_last_count, t_route_size) &&
+                            is_valid_position(s_job2, t_rank + 1, t_first_count, t_last_count, t_route_size);
+  bool t_reverse_pos_valid = is_valid_position(s_job2, t_rank, t_first_count, t_last_count, t_route_size) &&
+                             is_valid_position(s_job1, t_rank + 1, t_first_count, t_last_count, t_route_size);
+
+  // Early exit if no valid position combination exists
+  if (!(s_normal_pos_valid || s_reverse_pos_valid) || !(t_normal_pos_valid || t_reverse_pos_valid)) {
+    return false;
+  }
+
   auto target_pickup = _input.jobs[t_route[t_rank]].pickup +
                        _input.jobs[t_route[t_rank + 1]].pickup;
 
@@ -240,6 +283,7 @@ bool CrossExchange::is_valid() {
     // Keep target edge direction when inserting in source route.
     auto t_start = t_route.begin() + t_rank;
     s_is_normal_valid =
+      s_normal_pos_valid &&
       s_v.ok_for_range_bounds(s_eval - _normal_s_gain) &&
       source.is_valid_addition_for_capacity_inclusion(_input,
                                                       target_delivery,
@@ -252,6 +296,7 @@ bool CrossExchange::is_valid() {
       // Reverse target edge direction when inserting in source route.
       auto t_reverse_start = t_route.rbegin() + t_route.size() - 2 - t_rank;
       s_is_reverse_valid =
+        s_reverse_pos_valid &&
         s_v.ok_for_range_bounds(s_eval - _reversed_s_gain) &&
         source.is_valid_addition_for_capacity_inclusion(_input,
                                                         target_delivery,
@@ -281,6 +326,7 @@ bool CrossExchange::is_valid() {
     // Keep source edge direction when inserting in target route.
     auto s_start = s_route.begin() + s_rank;
     t_is_normal_valid =
+      t_normal_pos_valid &&
       t_v.ok_for_range_bounds(t_eval - _normal_t_gain) &&
       target.is_valid_addition_for_capacity_inclusion(_input,
                                                       source_delivery,
@@ -293,6 +339,7 @@ bool CrossExchange::is_valid() {
       // Reverse source edge direction when inserting in target route.
       auto s_reverse_start = s_route.rbegin() + s_route.size() - 2 - s_rank;
       t_is_reverse_valid =
+        t_reverse_pos_valid &&
         t_v.ok_for_range_bounds(t_eval - _reversed_t_gain) &&
         target.is_valid_addition_for_capacity_inclusion(_input,
                                                         source_delivery,

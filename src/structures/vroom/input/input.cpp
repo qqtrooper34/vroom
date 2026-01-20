@@ -196,6 +196,9 @@ void Input::add_job(const Job& job) {
   jobs.push_back(job);
   check_job(jobs.back());
   _has_jobs = true;
+  if (job.route_position != ROUTE_POSITION::NONE) {
+    _has_route_position_constraints = true;
+  }
 }
 
 void Input::add_shipment(const Job& pickup, const Job& delivery) {
@@ -443,6 +446,10 @@ bool Input::has_jobs() const {
 
 bool Input::has_shipments() const {
   return _has_shipments;
+}
+
+bool Input::has_route_position_constraints() const {
+  return _has_route_position_constraints;
 }
 
 bool Input::report_distances() const {

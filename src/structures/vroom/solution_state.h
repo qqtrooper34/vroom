@@ -84,6 +84,13 @@ public:
   std::vector<std::vector<Index>> matching_delivery_rank;
   std::vector<std::vector<Index>> matching_pickup_rank;
 
+  // first_jobs_count[v] stores the number of jobs with
+  // route_position == FIRST in route for vehicle v.
+  // last_jobs_count[v] stores the number of jobs with
+  // route_position == LAST in route for vehicle v.
+  std::vector<Index> first_jobs_count;
+  std::vector<Index> last_jobs_count;
+
   // cheapest_job_rank_in_routes_from[v1][v2][r1] stores the rank of
   // job in route v2 that minimize cost (as seen from the v2
   // perspective) from job at rank r1 in v1.
@@ -152,6 +159,8 @@ public:
 
   void set_insertion_ranks(const RawRoute& r, Index v);
   void set_insertion_ranks(const TWRoute& r, Index v);
+
+  void update_route_position_counts(const std::vector<Index>& route, Index v);
 
   void update_route_eval(const std::vector<Index>& route, Index v);
 

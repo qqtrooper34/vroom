@@ -380,6 +380,64 @@ SwapChoice compute_best_swap_star_choice(const Input& input,
         const auto t_index = target.route[sc.t_rank];
         const auto& t_delivery = input.jobs[t_index].delivery;
 
+        // Check route_position constraints for swapped jobs
+        const auto& s_job = input.jobs[s_index];
+        const auto& t_job = input.jobs[t_index];
+
+        // Count FIRST/LAST jobs in routes after swap
+        // Source route: loses s_job, gains t_job
+        auto s_first_count = sol_state.first_jobs_count[s_vehicle];
+        auto s_last_count = sol_state.last_jobs_count[s_vehicle];
+        if (s_job.route_position == ROUTE_POSITION::FIRST) --s_first_count;
+        if (s_job.route_position == ROUTE_POSITION::LAST) --s_last_count;
+        if (t_job.route_position == ROUTE_POSITION::FIRST) ++s_first_count;
+        if (t_job.route_position == ROUTE_POSITION::LAST) ++s_last_count;
+
+        // Target route: loses t_job, gains s_job
+        auto t_first_count = sol_state.first_jobs_count[t_vehicle];
+        auto t_last_count = sol_state.last_jobs_count[t_vehicle];
+        if (t_job.route_position == ROUTE_POSITION::FIRST) --t_first_count;
+        if (t_job.route_position == ROUTE_POSITION::LAST) --t_last_count;
+        if (s_job.route_position == ROUTE_POSITION::FIRST) ++t_first_count;
+        if (s_job.route_position == ROUTE_POSITION::LAST) ++t_last_count;
+
+        const auto s_route_size = source.route.size();  // size unchanged
+        const auto t_route_size = target.route.size();  // size unchanged
+
+        // Validate t_job position in source route
+        bool t_job_pos_valid = true;
+        switch (t_job.route_position) {
+          case ROUTE_POSITION::FIRST:
+            t_job_pos_valid = sc.insertion_in_source < s_first_count;
+            break;
+          case ROUTE_POSITION::LAST:
+            t_job_pos_valid = sc.insertion_in_source >= s_route_size - s_last_count;
+            break;
+          case ROUTE_POSITION::NONE:
+            t_job_pos_valid = (s_first_count == 0 || sc.insertion_in_source >= s_first_count) &&
+                              (s_last_count == 0 || sc.insertion_in_source < s_route_size - s_last_count);
+            break;
+        }
+
+        // Validate s_job position in target route
+        bool s_job_pos_valid = true;
+        switch (s_job.route_position) {
+          case ROUTE_POSITION::FIRST:
+            s_job_pos_valid = sc.insertion_in_target < t_first_count;
+            break;
+          case ROUTE_POSITION::LAST:
+            s_job_pos_valid = sc.insertion_in_target >= t_route_size - t_last_count;
+            break;
+          case ROUTE_POSITION::NONE:
+            s_job_pos_valid = (t_first_count == 0 || sc.insertion_in_target >= t_first_count) &&
+                              (t_last_count == 0 || sc.insertion_in_target < t_route_size - t_last_count);
+            break;
+        }
+
+        if (!t_job_pos_valid || !s_job_pos_valid) {
+          continue;
+        }
+
         if (const auto& t_pickup = input.jobs[t_index].pickup;
             !(t_delivery <= s_delivery_margin + s_delivery) ||
             !(t_pickup <= s_pickup_margin + s_pickup) ||

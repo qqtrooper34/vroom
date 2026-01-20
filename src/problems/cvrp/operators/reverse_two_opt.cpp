@@ -146,6 +146,86 @@ void ReverseTwoOpt::compute_gain() {
 bool ReverseTwoOpt::is_valid() {
   assert(gain_computed);
 
+  // ReverseTwoOpt reverses and swaps segments, which is incompatible with
+  // route_position constraints. Any FIRST/LAST job in swapped segments makes
+  // this operation invalid because:
+  // - FIRST jobs from target[0..t_rank] would go to source at end (not first)
+  // - LAST jobs from source[s_rank+1..end] would go to target at beginning (not last)
+  // - Reversing order also breaks FIRST/LAST grouping within segments
+
+  // Check target[0..t_rank] for FIRST/LAST jobs
+  for (Index i = 0; i <= t_rank; ++i) {
+    const auto pos = _input.jobs[t_route[i]].route_position;
+    if (pos == ROUTE_POSITION::FIRST || pos == ROUTE_POSITION::LAST) {
+      return false;
+    }
+  }
+
+  // Check source[s_rank+1..end] for FIRST/LAST jobs
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    const auto pos = _input.jobs[s_route[i]].route_position;
+    if (pos == ROUTE_POSITION::FIRST || pos == ROUTE_POSITION::LAST) {
+      return false;
+    }
+  }
+
+  // Also check that jobs kept in source [0..s_rank] won't end up in LAST zone
+  // (because new source tail will have jobs from target)
+  // And jobs kept in target [t_rank+1..end] won't end up in FIRST zone
+  // (because new target head will have jobs from source)
+
+  const auto new_s_size = (s_rank + 1) + (t_rank + 1);
+  const auto new_t_size = (s_route.size() - s_rank - 1) + (t_route.size() - t_rank - 1);
+
+  // Count FIRST/LAST in kept portions
+  Index s_kept_first = 0, s_kept_last = 0;
+  for (Index i = 0; i <= s_rank; ++i) {
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::FIRST) ++s_kept_first;
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::LAST) ++s_kept_last;
+  }
+
+  Index t_kept_first = 0, t_kept_last = 0;
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::FIRST) ++t_kept_first;
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::LAST) ++t_kept_last;
+  }
+
+  // Validate kept portions in new routes
+  // Source keeps [0..s_rank] at same positions, gets target[0..t_rank] reversed at end
+  for (Index i = 0; i <= s_rank; ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (i >= s_kept_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (i < new_s_size - s_kept_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((s_kept_first > 0 && i < s_kept_first) ||
+            (s_kept_last > 0 && i >= new_s_size - s_kept_last)) return false;
+        break;
+    }
+  }
+
+  // Target gets source[s_rank+1..end] reversed at beginning, keeps [t_rank+1..end]
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    const auto& job = _input.jobs[t_route[i]];
+    const auto new_pos = (s_route.size() - s_rank - 1) + (i - t_rank - 1);
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (new_pos >= t_kept_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (new_pos < new_t_size - t_kept_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((t_kept_first > 0 && new_pos < t_kept_first) ||
+            (t_kept_last > 0 && new_pos >= new_t_size - t_kept_last)) return false;
+        break;
+    }
+  }
+
   const auto& t_pickup = target.fwd_pickups(t_rank);
 
   const auto& s_pickup = source.bwd_pickups(s_rank);

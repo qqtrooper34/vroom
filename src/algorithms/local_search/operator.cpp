@@ -41,6 +41,26 @@ bool Operator::is_valid_for_range_bounds() const {
                                  stored_gain);
 }
 
+bool Operator::is_valid_job_rank_for_route_position(Index job_rank,
+                                                    Index v,
+                                                    Index insertion_rank) const {
+  const auto& job = _input.jobs[job_rank];
+  const auto first_count = _sol_state.first_jobs_count[v];
+  const auto last_count = _sol_state.last_jobs_count[v];
+  const auto route_size = (v == s_vehicle) ? s_route.size() : t_route.size();
+
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      return insertion_rank <= first_count;
+    case ROUTE_POSITION::LAST:
+      return insertion_rank >= route_size - last_count;
+    case ROUTE_POSITION::NONE:
+      return (first_count == 0 || insertion_rank >= first_count) &&
+             (last_count == 0 || insertion_rank <= route_size - last_count);
+  }
+  return true;
+}
+
 std::vector<Index> Operator::required_unassigned() const {
   return std::vector<Index>();
 }

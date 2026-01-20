@@ -14,6 +14,53 @@ All rights reserved (see LICENSE).
 
 namespace vroom::heuristics {
 
+// TAMS: Helper function to check route_position constraint during heuristic insertion
+template <class Route>
+inline bool is_valid_route_position(const Input& input,
+                                    const Route& route,
+                                    Index job_rank,
+                                    Index insertion_rank) {
+  const auto& job = input.jobs[job_rank];
+
+  // Count existing FIRST and LAST jobs in route
+  Index first_count = 0;
+  Index last_count = 0;
+  for (const auto& j : route.route) {
+    const auto& existing_job = input.jobs[j];
+    if (existing_job.route_position == ROUTE_POSITION::FIRST) {
+      ++first_count;
+    } else if (existing_job.route_position == ROUTE_POSITION::LAST) {
+      ++last_count;
+    }
+  }
+
+  const auto route_size = route.size();
+
+  bool result = true;
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      // FIRST jobs must be inserted in first positions (rank <= first_count)
+      result = insertion_rank <= first_count;
+      break;
+    case ROUTE_POSITION::LAST:
+      // LAST jobs must be inserted in last positions (rank >= route_size - last_count)
+      // LAST jobs cannot be the first job in an empty route
+      if (route_size == 0) {
+        result = false;
+      } else {
+        result = insertion_rank >= route_size - last_count;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      // Normal jobs cannot be placed in FIRST or LAST zones
+      result = (first_count == 0 || insertion_rank >= first_count) &&
+               (last_count == 0 || insertion_rank <= route_size - last_count);
+      break;
+  }
+
+  return result;
+}
+
 // Add seed job to route if required and return current cost of route
 // without vehicle fixed cost.
 template <class Route>
@@ -41,6 +88,12 @@ inline void seed_route(const Input& input,
 
     if (!input.vehicle_ok_with_job(v_rank, job_rank) ||
         current_job.type == JOB_TYPE::DELIVERY || job_not_ok(job_rank)) {
+      continue;
+    }
+
+    // TAMS: Skip LAST jobs during initialization — they should be added at the
+    // end of the route, not as the starting job.
+    if (current_job.route_position == ROUTE_POSITION::LAST) {
       continue;
     }
 
@@ -286,6 +339,8 @@ inline Eval fill_route(const Input& input,
             lambda * static_cast<double>(regrets[job_rank]);
 
           if (current_cost < best_cost &&
+              // TAMS: route_position constraint
+              is_valid_route_position(input, route, job_rank, r) &&
               (vehicle.ok_for_range_bounds(route_eval + current_eval)) &&
               route.is_valid_addition_for_capacity(input,
                                                    current_job.pickup,

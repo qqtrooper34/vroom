@@ -47,6 +47,11 @@ protected:
   // Used for internal operators only.
   bool is_valid_for_range_bounds() const;
 
+  // Check if job at job_rank can be placed at insertion_rank in route v
+  bool is_valid_job_rank_for_route_position(Index job_rank,
+                                            Index v,
+                                            Index insertion_rank) const;
+
 public:
   Operator(OperatorName name,
            const Input& input,

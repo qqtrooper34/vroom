@@ -99,6 +99,41 @@ void IntraExchange::compute_gain() {
 }
 
 bool IntraExchange::is_valid() {
+  // Check route_position constraints for the swapped jobs
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Job at s_rank moves to t_rank
+  const auto& s_job = _input.jobs[s_route[s_rank]];
+  switch (s_job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (t_rank >= first_count) return false;
+      break;
+    case ROUTE_POSITION::LAST:
+      if (t_rank < route_size - last_count) return false;
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && t_rank < first_count) ||
+          (last_count > 0 && t_rank >= route_size - last_count)) return false;
+      break;
+  }
+
+  // Job at t_rank moves to s_rank
+  const auto& t_job = _input.jobs[s_route[t_rank]];
+  switch (t_job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (s_rank >= first_count) return false;
+      break;
+    case ROUTE_POSITION::LAST:
+      if (s_rank < route_size - last_count) return false;
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && s_rank < first_count) ||
+          (last_count > 0 && s_rank >= route_size - last_count)) return false;
+      break;
+  }
+
   return is_valid_for_range_bounds() &&
          source.is_valid_addition_for_capacity_inclusion(_input,
                                                          _delivery,

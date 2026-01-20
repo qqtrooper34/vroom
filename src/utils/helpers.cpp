@@ -9,12 +9,9 @@ All rights reserved (see LICENSE).
 
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <numeric>
 #include <sstream>
-
-#ifdef LOG_LS_OPERATORS
-#include <iostream>
-#endif
 
 #include "utils/helpers.h"
 
