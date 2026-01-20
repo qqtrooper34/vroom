@@ -232,6 +232,7 @@ protected:
                          solutions[rank],
                          max_nb_jobs_removal,
                          search_time);
+
           ls.run();
 
           // Store solution indicators.

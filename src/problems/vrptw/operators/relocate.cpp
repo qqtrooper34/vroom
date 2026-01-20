@@ -32,8 +32,39 @@ Relocate::Relocate(const Input& input,
 }
 
 bool Relocate::is_valid() {
-  return cvrp::Relocate::is_valid() &&
-         _tw_t_route.is_valid_addition_for_tw(_input,
+  if (!cvrp::Relocate::is_valid()) {
+    return false;
+  }
+
+  // Check route_position constraint for target route
+  const auto& job = _input.jobs[s_route[s_rank]];
+  const auto first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[t_vehicle];
+  const auto target_size = t_route.size();
+
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      // FIRST jobs must be in the first positions
+      if (t_rank > first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      // LAST jobs must be in the last positions
+      if (t_rank < target_size - last_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      // Normal jobs cannot be placed in FIRST or LAST zones
+      if ((first_count > 0 && t_rank < first_count) ||
+          (last_count > 0 && t_rank > target_size - last_count)) {
+        return false;
+      }
+      break;
+  }
+
+  return _tw_t_route.is_valid_addition_for_tw(_input,
                                               s_route[s_rank],
                                               t_rank) &&
          _tw_s_route.is_valid_removal(_input, s_rank, 1);

@@ -158,6 +158,40 @@ void OrOpt::compute_gain() {
 bool OrOpt::is_valid() {
   assert(_gain_upper_bound_computed);
 
+  // Check route_position constraints for both jobs in target route
+  const auto& job1 = _input.jobs[s_route[s_rank]];
+  const auto& job2 = _input.jobs[s_route[s_rank + 1]];
+  const auto t_first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto t_last_count = _sol_state.last_jobs_count[t_vehicle];
+  const auto t_route_size = t_route.size();
+
+  // Helper to check position validity
+  auto is_valid_position = [&](const Job& job, Index new_rank) {
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        return new_rank <= t_first_count;
+      case ROUTE_POSITION::LAST:
+        if (t_route_size == 0) return false;
+        return new_rank >= t_route_size - t_last_count;
+      case ROUTE_POSITION::NONE:
+        return (t_first_count == 0 || new_rank >= t_first_count) &&
+               (t_last_count == 0 || new_rank <= t_route_size - t_last_count);
+    }
+    return true;
+  };
+
+  // Check normal order (job1 at t_rank, job2 at t_rank+1)
+  bool normal_position_valid = is_valid_position(job1, t_rank) &&
+                               is_valid_position(job2, t_rank + 1);
+
+  // Check reverse order (job2 at t_rank, job1 at t_rank+1)
+  bool reverse_position_valid = is_valid_position(job2, t_rank) &&
+                                is_valid_position(job1, t_rank + 1);
+
+  if (!normal_position_valid && !reverse_position_valid) {
+    return false;
+  }
+
   auto edge_pickup = _input.jobs[s_route[s_rank]].pickup +
                      _input.jobs[s_route[s_rank + 1]].pickup;
 
@@ -175,6 +209,7 @@ bool OrOpt::is_valid() {
     const auto t_eval = _sol_state.route_evals[t_vehicle];
 
     is_normal_valid =
+      normal_position_valid &&
       t_v.ok_for_range_bounds(t_eval - _normal_t_gain) &&
       target.is_valid_addition_for_capacity_inclusion(_input,
                                                       edge_delivery,
@@ -186,6 +221,7 @@ bool OrOpt::is_valid() {
     // Reverse edge direction.
     auto s_reverse_start = s_route.rbegin() + s_route.size() - 2 - s_rank;
     is_reverse_valid =
+      reverse_position_valid &&
       t_v.ok_for_range_bounds(t_eval - _reversed_t_gain) &&
       target.is_valid_addition_for_capacity_inclusion(_input,
                                                       edge_delivery,

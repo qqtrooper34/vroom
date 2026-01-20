@@ -116,6 +116,23 @@ inline Priority get_priority(const rapidjson::Value& object) {
   return priority;
 }
 
+inline ROUTE_POSITION get_route_position(const rapidjson::Value& object) {
+  if (object.HasMember("route_position")) {
+    if (!object["route_position"].IsString()) {
+      throw InputException("Недопустимое значение route_position.");
+    }
+    std::string pos = object["route_position"].GetString();
+    if (pos == "first") {
+      return ROUTE_POSITION::FIRST;
+    }
+    if (pos == "last") {
+      return ROUTE_POSITION::LAST;
+    }
+    throw InputException("route_position должен быть 'first' или 'last'.");
+  }
+  return ROUTE_POSITION::NONE;
+}
+
 template <typename T>
 inline std::optional<T> get_value_for(const rapidjson::Value& object,
                                       const char* key) {
@@ -471,7 +488,8 @@ inline Job get_job(const rapidjson::Value& json_job, unsigned amount_size) {
              get_skills(json_job),
              get_priority(json_job),
              get_time_windows(json_job),
-             get_string(json_job, "description"));
+             get_string(json_job, "description"),
+             get_route_position(json_job));
 }
 
 template <class T> inline Matrix<T> get_matrix(rapidjson::Value& m) {

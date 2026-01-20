@@ -7,6 +7,36 @@
 
 namespace vroom::ls {
 
+// Helper function to validate rank for route_position constraint.
+inline bool is_valid_rank_for_route_position(const Input& input,
+                                              const utils::SolutionState& sol_state,
+                                              Index j,
+                                              Index v,
+                                              Index rank,
+                                              std::size_t route_size) {
+  const auto& job = input.jobs[j];
+  const auto first_count = sol_state.first_jobs_count[v];
+  const auto last_count = sol_state.last_jobs_count[v];
+
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      // FIRST jobs must be in the first positions (rank <= first_count)
+      return rank <= first_count;
+    case ROUTE_POSITION::LAST:
+      // LAST jobs cannot be the first job in a route
+      if (route_size == 0) {
+        return false;
+      }
+      // LAST jobs must be in the last positions (rank >= route_size - last_count)
+      return rank >= route_size - last_count;
+    case ROUTE_POSITION::NONE:
+      // Normal jobs cannot be placed in FIRST or LAST zones
+      return (first_count == 0 || rank >= first_count) &&
+             (last_count == 0 || rank <= route_size - last_count);
+  }
+  return true;
+}
+
 struct RouteInsertion {
   Eval eval{NO_EVAL};
   Amount delivery;
@@ -31,9 +61,34 @@ compute_best_insertion_single(const Input& input,
   const auto& v_target = input.vehicles[v];
 
   if (input.vehicle_ok_with_job(v, j)) {
-    for (Index rank = sol_state.insertion_ranks_begin[v][j];
-         rank < sol_state.insertion_ranks_end[v][j];
-         ++rank) {
+    // Determine loop bounds, adjusting for route_position constraints
+    Index rank_begin = sol_state.insertion_ranks_begin[v][j];
+    Index rank_end = sol_state.insertion_ranks_end[v][j];
+
+    // For FIRST jobs, must start from rank 0 to ensure we try the first position
+    if (current_job.route_position == ROUTE_POSITION::FIRST) {
+      rank_begin = 0;
+      // FIRST jobs can only go in first positions, so limit end
+      const Index first_limit = static_cast<Index>(sol_state.first_jobs_count[v] + 1);
+      rank_end = std::min(rank_end, first_limit);
+    }
+    // For LAST jobs, must try positions at the end
+    if (current_job.route_position == ROUTE_POSITION::LAST) {
+      const auto route_size = static_cast<Index>(route.size());
+      // LAST jobs can only go in last positions
+      if (route_size > 0) {
+        const Index last_begin = static_cast<Index>(route_size - sol_state.last_jobs_count[v]);
+        rank_begin = std::max(rank_begin, last_begin);
+      }
+      rank_end = static_cast<Index>(route_size + 1);
+    }
+
+    for (Index rank = rank_begin; rank < rank_end; ++rank) {
+      // Check route_position constraint
+      if (!is_valid_rank_for_route_position(input, sol_state, j, v, rank, route.size())) {
+        continue;
+      }
+
       Eval current_eval =
         utils::addition_cost(input, j, v_target, route.route, rank);
       if (current_eval.cost < result.eval.cost &&

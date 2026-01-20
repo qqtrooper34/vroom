@@ -297,6 +297,7 @@ void LocalSearch<Route,
       // Update best_route data required for consistency.
       modified_vehicles.insert(best_route);
       _sol_state.update_route_eval(_sol[best_route].route, best_route);
+      _sol_state.update_route_position_counts(_sol[best_route].route, best_route);
       _sol_state.set_insertion_ranks(_sol[best_route], best_route);
 
       const auto fixed_cost =
@@ -1875,6 +1876,7 @@ void LocalSearch<Route,
         _sol_state.update_costs(_sol[v_rank].route, v_rank);
         _sol_state.update_skills(_sol[v_rank].route, v_rank);
         _sol_state.update_priorities(_sol[v_rank].route, v_rank);
+        _sol_state.update_route_position_counts(_sol[v_rank].route, v_rank);
         _sol_state.set_node_gains(_sol[v_rank].route, v_rank);
         _sol_state.set_edge_gains(_sol[v_rank].route, v_rank);
         _sol_state.set_pd_matching_ranks(_sol[v_rank].route, v_rank);
@@ -2020,6 +2022,8 @@ void LocalSearch<Route,
           _sol_state.set_node_gains(_sol[v].route, v);
           _sol_state.set_pd_matching_ranks(_sol[v].route, v);
           _sol_state.set_pd_gains(_sol[v].route, v);
+          // Update route_position counts after job removal for correct re-insertion
+          _sol_state.update_route_position_counts(_sol[v].route, v);
         }
       }
 
@@ -2038,6 +2042,7 @@ void LocalSearch<Route,
         _sol_state.update_costs(_sol[v].route, v);
         _sol_state.update_skills(_sol[v].route, v);
         _sol_state.update_priorities(_sol[v].route, v);
+        _sol_state.update_route_position_counts(_sol[v].route, v);
         _sol_state.set_node_gains(_sol[v].route, v);
         _sol_state.set_edge_gains(_sol[v].route, v);
         _sol_state.set_pd_matching_ranks(_sol[v].route, v);

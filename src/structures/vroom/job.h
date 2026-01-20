@@ -31,6 +31,7 @@ struct Job {
   const Priority priority;
   const std::vector<TimeWindow> tws;
   const std::string description;
+  const ROUTE_POSITION route_position;
 
   // Constructor for regular one-stop job (JOB_TYPE::SINGLE).
   Job(Id id,
@@ -43,7 +44,8 @@ struct Job {
       Priority priority = 0,
       const std::vector<TimeWindow>& tws =
         std::vector<TimeWindow>(1, TimeWindow()),
-      std::string description = "");
+      std::string description = "",
+      ROUTE_POSITION route_position = ROUTE_POSITION::NONE);
 
   // Constructor for pickup and delivery jobs (JOB_TYPE::PICKUP or
   // JOB_TYPE::DELIVERY).
@@ -57,7 +59,8 @@ struct Job {
       Priority priority = 0,
       const std::vector<TimeWindow>& tws =
         std::vector<TimeWindow>(1, TimeWindow()),
-      std::string description = "");
+      std::string description = "",
+      ROUTE_POSITION route_position = ROUTE_POSITION::NONE);
 
   Index index() const {
     return location.index();

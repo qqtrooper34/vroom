@@ -110,6 +110,9 @@ struct Server {
 // constraints.
 enum class JOB_TYPE { SINGLE, PICKUP, DELIVERY };
 
+// Route position constraint for jobs.
+enum class ROUTE_POSITION { NONE, FIRST, LAST };
+
 // Available location status.
 enum class STEP_TYPE { START, JOB, BREAK, END };
 
@@ -152,7 +155,8 @@ enum class VIOLATION {
   MISSING_BREAK,
   MAX_TRAVEL_TIME,
   MAX_LOAD,
-  MAX_DISTANCE
+  MAX_DISTANCE,
+  ROUTE_POSITION
 };
 
 enum OperatorName {

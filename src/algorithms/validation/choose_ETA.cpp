@@ -1188,6 +1188,10 @@ Route choose_ETA(const Input& input,
   UserDistance distances_sum = 0;
   UserDistance breaks_distances_sum = 0;
 
+  // Track route_position zones for validation
+  bool seen_none_job = false;
+  bool seen_last_job = false;
+
   for (const auto& step : steps) {
     switch (step.type) {
       using enum STEP_TYPE;
@@ -1306,6 +1310,29 @@ Route choose_ETA(const Input& input,
           expected_delivery_ranks.erase(search);
         }
         break;
+      }
+
+      // Check route_position constraint
+      switch (job.route_position) {
+        case ROUTE_POSITION::FIRST:
+          // FIRST jobs must come before all NONE and LAST jobs
+          if (seen_none_job || seen_last_job) {
+            current.violations.types.insert(VIOLATION::ROUTE_POSITION);
+            v_types.insert(VIOLATION::ROUTE_POSITION);
+          }
+          break;
+        case ROUTE_POSITION::NONE:
+          // NONE jobs must come after all FIRST jobs and before LAST jobs
+          if (seen_last_job) {
+            current.violations.types.insert(VIOLATION::ROUTE_POSITION);
+            v_types.insert(VIOLATION::ROUTE_POSITION);
+          }
+          seen_none_job = true;
+          break;
+        case ROUTE_POSITION::LAST:
+          // LAST jobs can be anywhere at the end (but tracked for others)
+          seen_last_job = true;
+          break;
       }
 
       previous_start = service_start;

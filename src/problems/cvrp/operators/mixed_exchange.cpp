@@ -175,6 +175,45 @@ void MixedExchange::compute_gain() {
 bool MixedExchange::is_valid() {
   assert(_gain_upper_bound_computed);
 
+  // Check route_position constraints for mixed exchange
+  const auto s_first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto s_last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto t_first_count = _sol_state.first_jobs_count[t_vehicle];
+  const auto t_last_count = _sol_state.last_jobs_count[t_vehicle];
+  // After exchange: source loses 1 job, gains 2 -> net +1
+  const auto new_s_route_size = s_route.size() + 1;
+  const auto new_t_route_size = t_route.size() - 1;
+
+  // Helper to check position validity
+  auto is_valid_position = [&](const Job& job, Index new_rank, Index first_c, Index last_c, Index route_sz) {
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        return new_rank < first_c;
+      case ROUTE_POSITION::LAST:
+        return new_rank >= route_sz - last_c;
+      case ROUTE_POSITION::NONE:
+        return (first_c == 0 || new_rank >= first_c) &&
+               (last_c == 0 || new_rank < route_sz - last_c);
+    }
+    return true;
+  };
+
+  // Check if s_route[s_rank] can go to t_route at t_rank
+  const auto& s_job = _input.jobs[s_route[s_rank]];
+  bool t_pos_valid = is_valid_position(s_job, t_rank, t_first_count, t_last_count, new_t_route_size);
+
+  // Check if t_route jobs can go to s_route at s_rank, s_rank+1
+  const auto& t_job1 = _input.jobs[t_route[t_rank]];
+  const auto& t_job2 = _input.jobs[t_route[t_rank + 1]];
+  bool s_normal_pos_valid = is_valid_position(t_job1, s_rank, s_first_count, s_last_count, new_s_route_size) &&
+                            is_valid_position(t_job2, s_rank + 1, s_first_count, s_last_count, new_s_route_size);
+  bool s_reverse_pos_valid = is_valid_position(t_job2, s_rank, s_first_count, s_last_count, new_s_route_size) &&
+                             is_valid_position(t_job1, s_rank + 1, s_first_count, s_last_count, new_s_route_size);
+
+  if (!t_pos_valid || !(s_normal_pos_valid || s_reverse_pos_valid)) {
+    return false;
+  }
+
   bool valid =
     is_valid_for_target_range_bounds() &&
     target.is_valid_addition_for_capacity_margins(_input,

@@ -96,6 +96,94 @@ void UnassignedExchange::compute_gain() {
 }
 
 bool UnassignedExchange::is_valid() {
+  // Check route_position constraints
+  // This operator removes job at s_rank and inserts _u at t_rank
+
+  const auto& removed_job = _input.jobs[_removed];
+  const auto& inserted_job = _input.jobs[_u];
+
+  // Calculate new first/last counts after operation
+  auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  auto last_count = _sol_state.last_jobs_count[s_vehicle];
+
+  if (removed_job.route_position == ROUTE_POSITION::FIRST) --first_count;
+  if (removed_job.route_position == ROUTE_POSITION::LAST) --last_count;
+  if (inserted_job.route_position == ROUTE_POSITION::FIRST) ++first_count;
+  if (inserted_job.route_position == ROUTE_POSITION::LAST) ++last_count;
+
+  const auto route_size = s_route.size();  // size unchanged (remove one, add one)
+
+  // Check if inserted job's position is valid
+  bool position_valid = true;
+  switch (inserted_job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      position_valid = t_rank < first_count;
+      break;
+    case ROUTE_POSITION::LAST:
+      position_valid = t_rank >= route_size - last_count;
+      break;
+    case ROUTE_POSITION::NONE:
+      position_valid = (first_count == 0 || t_rank >= first_count) &&
+                       (last_count == 0 || t_rank < route_size - last_count);
+      break;
+  }
+
+  if (!position_valid) {
+    return false;
+  }
+
+  // Check that existing jobs remain in valid positions after the exchange
+  // Jobs in _moved_jobs will be at positions [_first_rank.._last_rank-1]
+  for (Index i = 0; i < _moved_jobs.size(); ++i) {
+    const auto& job = _input.jobs[_moved_jobs[i]];
+    const auto new_pos = _first_rank + i;
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (new_pos >= first_count) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (new_pos < route_size - last_count) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((first_count > 0 && new_pos < first_count) ||
+            (last_count > 0 && new_pos >= route_size - last_count)) return false;
+        break;
+    }
+  }
+
+  // Check jobs outside the moved range
+  for (Index i = 0; i < _first_rank; ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (i >= first_count) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (i < route_size - last_count) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((first_count > 0 && i < first_count) ||
+            (last_count > 0 && i >= route_size - last_count)) return false;
+        break;
+    }
+  }
+
+  for (Index i = _last_rank; i < route_size; ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (i >= first_count) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (i < route_size - last_count) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((first_count > 0 && i < first_count) ||
+            (last_count > 0 && i >= route_size - last_count)) return false;
+        break;
+    }
+  }
+
   auto pickup = source.pickup_in_range(_first_rank, _last_rank);
   assert(_input.jobs[_removed].pickup <= pickup);
   pickup -= _input.jobs[_removed].pickup;

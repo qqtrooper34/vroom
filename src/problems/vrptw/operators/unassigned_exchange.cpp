@@ -31,8 +31,39 @@ UnassignedExchange::UnassignedExchange(const Input& input,
 }
 
 bool UnassignedExchange::is_valid() {
-  return cvrp::UnassignedExchange::is_valid() &&
-         _tw_s_route.is_valid_addition_for_tw(_input,
+  if (!cvrp::UnassignedExchange::is_valid()) {
+    return false;
+  }
+
+  // Check route_position constraint for the unassigned job being inserted
+  const auto& job_u = _input.jobs[_u];
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Determine the effective insertion rank for _u
+  Index u_rank = (s_rank < t_rank) ? t_rank - 1 : t_rank;
+
+  switch (job_u.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (u_rank >= first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      if (u_rank < route_size - last_count - 1) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && u_rank < first_count) ||
+          (last_count > 0 && u_rank >= route_size - last_count - 1)) {
+        return false;
+      }
+      break;
+  }
+
+  return _tw_s_route.is_valid_addition_for_tw(_input,
                                               _delivery,
                                               _moved_jobs.begin(),
                                               _moved_jobs.end(),

@@ -195,11 +195,55 @@ void IntraMixedExchange::compute_gain() {
 bool IntraMixedExchange::is_valid() {
   assert(_gain_upper_bound_computed);
 
+  // Check route_position constraints for mixed exchange
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Helper lambda to check if a job can be at a given rank
+  auto is_valid_position = [&](Index job_rank, Index new_rank) {
+    const auto& job = _input.jobs[job_rank];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        return new_rank < first_count;
+      case ROUTE_POSITION::LAST:
+        return new_rank >= route_size - last_count;
+      case ROUTE_POSITION::NONE:
+        return (first_count == 0 || new_rank >= first_count) &&
+               (last_count == 0 || new_rank < route_size - last_count);
+    }
+    return true;
+  };
+
+  // Check positions after the exchange (normal variant)
+  // _moved_jobs contains the new arrangement from _first_rank to _last_rank
+  bool normal_position_valid = true;
+  for (Index i = 0; i < _moved_jobs.size() && normal_position_valid; ++i) {
+    Index new_rank = _first_rank + i;
+    normal_position_valid = is_valid_position(_moved_jobs[i], new_rank);
+  }
+
+  // Check positions for reverse variant
+  bool reverse_position_valid = true;
+  if (check_t_reverse) {
+    std::swap(_moved_jobs[_t_edge_first], _moved_jobs[_t_edge_last]);
+    for (Index i = 0; i < _moved_jobs.size() && reverse_position_valid; ++i) {
+      Index new_rank = _first_rank + i;
+      reverse_position_valid = is_valid_position(_moved_jobs[i], new_rank);
+    }
+    std::swap(_moved_jobs[_t_edge_first], _moved_jobs[_t_edge_last]);
+  }
+
+  if (!normal_position_valid && !reverse_position_valid) {
+    return false;
+  }
+
   const auto& s_v = _input.vehicles[s_vehicle];
   const auto& s_eval = _sol_state.route_evals[s_vehicle];
   const auto normal_eval = _normal_s_gain + t_gain;
 
   s_is_normal_valid =
+    normal_position_valid &&
     s_v.ok_for_range_bounds(s_eval - normal_eval) &&
     source.is_valid_addition_for_capacity_inclusion(_input,
                                                     _delivery,
@@ -208,7 +252,7 @@ bool IntraMixedExchange::is_valid() {
                                                     _first_rank,
                                                     _last_rank);
 
-  if (check_t_reverse) {
+  if (check_t_reverse && reverse_position_valid) {
     const auto reversed_eval = _reversed_s_gain + t_gain;
 
     if (s_v.ok_for_range_bounds(s_eval - reversed_eval)) {

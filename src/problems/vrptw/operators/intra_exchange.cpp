@@ -27,8 +27,58 @@ IntraExchange::IntraExchange(const Input& input,
 }
 
 bool IntraExchange::is_valid() {
-  return cvrp::IntraExchange::is_valid() &&
-         _tw_s_route.is_valid_addition_for_tw(_input,
+  if (!cvrp::IntraExchange::is_valid()) {
+    return false;
+  }
+
+  // Check route_position constraints for both jobs being exchanged
+  const auto& job_s = _input.jobs[s_route[s_rank]];
+  const auto& job_t = _input.jobs[s_route[t_rank]];
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // Check if job_s can go to t_rank
+  switch (job_s.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (t_rank >= first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      if (t_rank < route_size - last_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && t_rank < first_count) ||
+          (last_count > 0 && t_rank >= route_size - last_count)) {
+        return false;
+      }
+      break;
+  }
+
+  // Check if job_t can go to s_rank
+  switch (job_t.route_position) {
+    case ROUTE_POSITION::FIRST:
+      if (s_rank >= first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      if (s_rank < route_size - last_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      if ((first_count > 0 && s_rank < first_count) ||
+          (last_count > 0 && s_rank >= route_size - last_count)) {
+        return false;
+      }
+      break;
+  }
+
+  return _tw_s_route.is_valid_addition_for_tw(_input,
                                               _delivery,
                                               _moved_jobs.begin(),
                                               _moved_jobs.end(),

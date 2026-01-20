@@ -27,8 +27,48 @@ IntraRelocate::IntraRelocate(const Input& input,
 }
 
 bool IntraRelocate::is_valid() {
-  return cvrp::IntraRelocate::is_valid() &&
-         _tw_s_route.is_valid_addition_for_tw(_input,
+  if (!cvrp::IntraRelocate::is_valid()) {
+    return false;
+  }
+
+  // Check route_position constraint
+  const auto& job = _input.jobs[s_route[s_rank]];
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  switch (job.route_position) {
+    case ROUTE_POSITION::FIRST:
+      // FIRST jobs must stay in the first positions
+      if (t_rank >= first_count) {
+        return false;
+      }
+      break;
+    case ROUTE_POSITION::LAST:
+      // LAST jobs must stay in the last positions
+      // After removal, effective position shifts
+      if (s_rank < t_rank) {
+        // Moving forward
+        if (t_rank < route_size - last_count - 1) {
+          return false;
+        }
+      } else {
+        // Moving backward
+        if (t_rank < route_size - last_count) {
+          return false;
+        }
+      }
+      break;
+    case ROUTE_POSITION::NONE:
+      // Normal jobs cannot move into FIRST or LAST zones
+      if ((first_count > 0 && t_rank < first_count) ||
+          (last_count > 0 && t_rank >= route_size - last_count)) {
+        return false;
+      }
+      break;
+  }
+
+  return _tw_s_route.is_valid_addition_for_tw(_input,
                                               _delivery,
                                               _moved_jobs.begin(),
                                               _moved_jobs.end(),

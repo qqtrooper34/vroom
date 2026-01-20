@@ -1,0 +1,52 @@
+{
+  "vehicles": [
+    {
+      "id": 1,
+      "start": [2.3522, 48.8566],
+      "end": [2.3522, 48.8566],
+      "capacity": [100]
+    }
+  ],
+  "jobs": [
+    {
+      "id": 1,
+      "location": [2.3488, 48.8534],
+      "service": 300,
+      "route_position": "first",
+      "delivery": [10]
+    },
+    {
+      "id": 2,
+      "location": [2.3490, 48.8540],
+      "service": 300,
+      "route_position": "first",
+      "delivery": [10]
+    },
+    {
+      "id": 3,
+      "location": [2.3600, 48.8600],
+      "service": 300,
+      "delivery": [10]
+    },
+    {
+      "id": 4,
+      "location": [2.3700, 48.8700],
+      "service": 300,
+      "delivery": [10]
+    },
+    {
+      "id": 5,
+      "location": [2.3800, 48.8800],
+      "service": 300,
+      "route_position": "last",
+      "delivery": [10]
+    },
+    {
+      "id": 6,
+      "location": [2.3850, 48.8850],
+      "service": 300,
+      "route_position": "last",
+      "delivery": [10]
+    }
+  ]
+}

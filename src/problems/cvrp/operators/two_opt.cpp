@@ -109,6 +109,117 @@ void TwoOpt::compute_gain() {
 bool TwoOpt::is_valid() {
   assert(gain_computed);
 
+  // Check route_position constraints for tail swap
+  // After two_opt:
+  // - Source keeps [0..s_rank], gets target[t_rank+1..end]
+  // - Target keeps [0..t_rank], gets source[s_rank+1..end]
+
+  const auto new_s_size = (s_rank + 1) + (t_route.size() - t_rank - 1);
+  const auto new_t_size = (t_rank + 1) + (s_route.size() - s_rank - 1);
+
+  // Count FIRST/LAST in kept portions and swapped portions
+  Index s_kept_first = 0, s_kept_last = 0;
+  for (Index i = 0; i <= s_rank; ++i) {
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::FIRST) ++s_kept_first;
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::LAST) ++s_kept_last;
+  }
+
+  Index t_kept_first = 0, t_kept_last = 0;
+  for (Index i = 0; i <= t_rank; ++i) {
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::FIRST) ++t_kept_first;
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::LAST) ++t_kept_last;
+  }
+
+  Index s_swap_first = 0, s_swap_last = 0;
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::FIRST) ++s_swap_first;
+    if (_input.jobs[s_route[i]].route_position == ROUTE_POSITION::LAST) ++s_swap_last;
+  }
+
+  Index t_swap_first = 0, t_swap_last = 0;
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::FIRST) ++t_swap_first;
+    if (_input.jobs[t_route[i]].route_position == ROUTE_POSITION::LAST) ++t_swap_last;
+  }
+
+  // New route compositions:
+  // Source: first_count = s_kept_first + t_swap_first, last_count = s_kept_last + t_swap_last
+  // Target: first_count = t_kept_first + s_swap_first, last_count = t_kept_last + s_swap_last
+  const auto new_s_first = s_kept_first + t_swap_first;
+  const auto new_s_last = s_kept_last + t_swap_last;
+  const auto new_t_first = t_kept_first + s_swap_first;
+  const auto new_t_last = t_kept_last + s_swap_last;
+
+  // Validate: jobs kept in source [0..s_rank]
+  for (Index i = 0; i <= s_rank; ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (i >= new_s_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (i < new_s_size - new_s_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((new_s_first > 0 && i < new_s_first) ||
+            (new_s_last > 0 && i >= new_s_size - new_s_last)) return false;
+        break;
+    }
+  }
+
+  // Validate: jobs from target to source at positions [s_rank+1..new_s_size-1]
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    const auto& job = _input.jobs[t_route[i]];
+    const auto new_pos = s_rank + 1 + (i - t_rank - 1);
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (new_pos >= new_s_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (new_pos < new_s_size - new_s_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((new_s_first > 0 && new_pos < new_s_first) ||
+            (new_s_last > 0 && new_pos >= new_s_size - new_s_last)) return false;
+        break;
+    }
+  }
+
+  // Validate: jobs kept in target [0..t_rank]
+  for (Index i = 0; i <= t_rank; ++i) {
+    const auto& job = _input.jobs[t_route[i]];
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (i >= new_t_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (i < new_t_size - new_t_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((new_t_first > 0 && i < new_t_first) ||
+            (new_t_last > 0 && i >= new_t_size - new_t_last)) return false;
+        break;
+    }
+  }
+
+  // Validate: jobs from source to target at positions [t_rank+1..new_t_size-1]
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    const auto& job = _input.jobs[s_route[i]];
+    const auto new_pos = t_rank + 1 + (i - s_rank - 1);
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (new_pos >= new_t_first) return false;
+        break;
+      case ROUTE_POSITION::LAST:
+        if (new_pos < new_t_size - new_t_last) return false;
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((new_t_first > 0 && new_pos < new_t_first) ||
+            (new_t_last > 0 && new_pos >= new_t_size - new_t_last)) return false;
+        break;
+    }
+  }
+
   const auto& t_pickup = target.bwd_pickups(t_rank);
 
   const auto& s_pickup = source.bwd_pickups(s_rank);

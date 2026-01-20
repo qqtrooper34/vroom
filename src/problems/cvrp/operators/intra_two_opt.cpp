@@ -94,6 +94,36 @@ bool IntraTwoOpt::reversal_ok_for_shipments() const {
 }
 
 bool IntraTwoOpt::is_valid() {
+  // Check route_position constraint for the reversed segment
+  const auto first_count = _sol_state.first_jobs_count[s_vehicle];
+  const auto last_count = _sol_state.last_jobs_count[s_vehicle];
+  const auto route_size = s_route.size();
+
+  // After reversal, job at rank r goes to position s_rank + (t_rank - r)
+  for (Index r = s_rank; r <= t_rank; ++r) {
+    const auto& job = _input.jobs[s_route[r]];
+    Index new_rank = s_rank + (t_rank - r);
+
+    switch (job.route_position) {
+      case ROUTE_POSITION::FIRST:
+        if (new_rank >= first_count) {
+          return false;
+        }
+        break;
+      case ROUTE_POSITION::LAST:
+        if (new_rank < route_size - last_count) {
+          return false;
+        }
+        break;
+      case ROUTE_POSITION::NONE:
+        if ((first_count > 0 && new_rank < first_count) ||
+            (last_count > 0 && new_rank >= route_size - last_count)) {
+          return false;
+        }
+        break;
+    }
+  }
+
   bool valid = (!_input.has_shipments() || reversal_ok_for_shipments()) &&
                is_valid_for_range_bounds();
 
