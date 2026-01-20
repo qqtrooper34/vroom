@@ -276,6 +276,19 @@ Eval basic(const Input& input,
       Amount best_modified_delivery = input.zero_amount();
       Eval best_eval;
 
+      // Check if there are unassigned FIRST jobs that can be inserted
+      // If so, prioritize them over non-FIRST jobs to prevent blocking FIRST positions
+      bool has_insertable_first_jobs = false;
+      for (const auto job_rank : unassigned) {
+        const auto& job = input.jobs[job_rank];
+        if (job.route_position == ROUTE_POSITION::FIRST &&
+            job.type != JOB_TYPE::DELIVERY &&
+            input.vehicle_ok_with_job(v_rank, job_rank)) {
+          has_insertable_first_jobs = true;
+          break;
+        }
+      }
+
       for (const auto job_rank : unassigned) {
         if (!input.vehicle_ok_with_job(v_rank, job_rank)) {
           continue;
@@ -284,6 +297,13 @@ Eval basic(const Input& input,
         const auto& current_job = input.jobs[job_rank];
 
         if (current_job.type == JOB_TYPE::DELIVERY) {
+          continue;
+        }
+
+        // Skip non-FIRST jobs when there are still FIRST jobs to insert
+        // This prevents non-FIRST jobs from blocking FIRST positions
+        if (has_insertable_first_jobs &&
+            current_job.route_position != ROUTE_POSITION::FIRST) {
           continue;
         }
 
@@ -729,6 +749,19 @@ Eval dynamic_vehicle_choice(const Input& input,
       Amount best_modified_delivery = input.zero_amount();
       Eval best_eval;
 
+      // Check if there are unassigned FIRST jobs that can be inserted
+      // If so, prioritize them over non-FIRST jobs to prevent blocking FIRST positions
+      bool has_insertable_first_jobs = false;
+      for (const auto job_rank : unassigned) {
+        const auto& job = input.jobs[job_rank];
+        if (job.route_position == ROUTE_POSITION::FIRST &&
+            job.type != JOB_TYPE::DELIVERY &&
+            input.vehicle_ok_with_job(v_rank, job_rank)) {
+          has_insertable_first_jobs = true;
+          break;
+        }
+      }
+
       for (const auto job_rank : unassigned) {
         if (!input.vehicle_ok_with_job(v_rank, job_rank)) {
           continue;
@@ -737,6 +770,13 @@ Eval dynamic_vehicle_choice(const Input& input,
         const auto& current_job = input.jobs[job_rank];
 
         if (current_job.type == JOB_TYPE::DELIVERY) {
+          continue;
+        }
+
+        // Skip non-FIRST jobs when there are still FIRST jobs to insert
+        // This prevents non-FIRST jobs from blocking FIRST positions
+        if (has_insertable_first_jobs &&
+            current_job.route_position != ROUTE_POSITION::FIRST) {
           continue;
         }
 
