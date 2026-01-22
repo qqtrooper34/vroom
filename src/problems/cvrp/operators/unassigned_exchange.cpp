@@ -85,6 +85,8 @@ void UnassignedExchange::compute_gain() {
     } else {
       s_gain -= v.eval(u_index, _input.jobs[s_route[s_rank + 1]].index());
     }
+    // TAMS: вычитаем service добавляемого job (edge_evals_around_node уже содержит service удаляемого)
+    s_gain.service -= _input.jobs[_u].service;
   } else {
     // No common edge so both gains can be computed independently.
     s_gain = _sol_state.node_gains[s_vehicle][s_rank] -

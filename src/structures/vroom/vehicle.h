@@ -61,6 +61,7 @@ struct Vehicle {
   size_t max_tasks;
   const Duration max_travel_time;
   const Distance max_distance;
+  const Duration max_work_time;  // TAMS: Общее рабочее время (travel + service)
   const bool has_break_max_load;
   std::vector<VehicleStep> steps;
   Index type;
@@ -84,6 +85,8 @@ struct Vehicle {
       std::optional<UserDuration>(),
     const std::optional<UserDistance>& max_distance =
       std::optional<UserDistance>(),
+    const std::optional<UserDuration>& max_work_time =
+      std::optional<UserDuration>(),  // TAMS
     const std::vector<VehicleStep>& input_steps = std::vector<VehicleStep>(),
     std::string type_str = NO_TYPE);
 
@@ -127,9 +130,18 @@ struct Vehicle {
     return d <= max_distance;
   }
 
+  // TAMS: Проверка общего рабочего времени (travel + service)
+  bool ok_for_work_time(Duration travel, Duration service) const {
+    assert(0 <= travel && 0 <= service);
+    return (travel + service) <= max_work_time;
+  }
+
   bool ok_for_range_bounds(const Eval& e) const {
-    assert(0 <= e.duration && 0 <= e.distance);
-    return e.duration <= max_travel_time && e.distance <= max_distance;
+    assert(0 <= e.duration && 0 <= e.distance && 0 <= e.service);
+    // TAMS: добавлена проверка max_work_time (travel + service)
+    return e.duration <= max_travel_time &&
+           e.distance <= max_distance &&
+           (e.duration + e.service) <= max_work_time;
   }
 
   bool has_range_bounds() const;

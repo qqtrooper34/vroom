@@ -139,6 +139,24 @@ void ReverseTwoOpt::compute_gain() {
     t_gain.cost += t_v.fixed_cost();
   }
 
+  // TAMS: compute service delta for both routes
+  // Source keeps [0..s_rank], gets target[0..t_rank] reversed
+  // Target gets source[s_rank+1..end] reversed, keeps [t_rank+1..end]
+  Duration s_removed_service = 0;  // service from source[s_rank+1..end]
+  Duration t_removed_service = 0;  // service from target[0..t_rank]
+
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    s_removed_service += _input.jobs[s_route[i]].service;
+  }
+  for (Index i = 0; i <= t_rank; ++i) {
+    t_removed_service += _input.jobs[t_route[i]].service;
+  }
+
+  // s_gain.service = removed from source - added to source (from target)
+  s_gain.service = s_removed_service - t_removed_service;
+  // t_gain.service = removed from target - added to target (from source)
+  t_gain.service = t_removed_service - s_removed_service;
+
   stored_gain = s_gain + t_gain;
   gain_computed = true;
 }

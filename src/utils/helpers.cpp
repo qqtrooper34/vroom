@@ -155,8 +155,13 @@ Eval route_eval_for_vehicle(const Input& input,
     }
 
     Index previous = *first_job;
+    // TAMS: добавляем service первого job
+    eval.service += input.jobs[*first_job].service;
+
     for (auto it = std::next(first_job); it != last_job; ++it) {
       eval += v.eval(input.jobs[previous].index(), input.jobs[*it].index());
+      // TAMS: добавляем service каждого job
+      eval.service += input.jobs[*it].service;
       previous = *it;
     }
 

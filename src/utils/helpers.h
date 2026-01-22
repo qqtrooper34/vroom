@@ -130,7 +130,10 @@ inline Eval addition_cost(const Input& input,
     }
   }
 
-  return previous_eval + next_eval - old_edge_eval;
+  Eval result = previous_eval + next_eval - old_edge_eval;
+  // TAMS: добавляем service job к eval для проверки max_work_time
+  result.service = input.jobs[job_rank].services[v.type];
+  return result;
 }
 
 // Evaluate adding pickup with rank job_rank and associated delivery
@@ -153,6 +156,8 @@ inline Eval addition_cost(const Input& input,
     const Index p_index = input.jobs[job_rank].index();
     const Index d_index = input.jobs[job_rank + 1].index();
     eval += v.eval(p_index, d_index);
+    // TAMS: добавляем service delivery (pickup service уже добавлен выше)
+    eval.service += input.jobs[job_rank + 1].services[v.type];
 
     Eval after_delivery;
     Eval remove_after_pickup;
@@ -250,7 +255,10 @@ inline Eval in_place_delta_cost(const Input& input,
     old_virtual_eval = v.eval(p_index.value(), n_index.value());
   }
 
-  return new_previous_eval + new_next_eval - old_virtual_eval;
+  Eval result = new_previous_eval + new_next_eval - old_virtual_eval;
+  // TAMS: service добавляемого job (node_gains уже содержит service удаляемого)
+  result.service = input.jobs[job_rank].services[v.type];
+  return result;
 }
 
 Priority priority_sum_for_route(const Input& input,

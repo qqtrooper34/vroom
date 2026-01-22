@@ -199,6 +199,8 @@ void SolutionState::set_node_gains(const std::vector<Index>& route, Index v) {
   edge_evals_around_node[v][0] = edges_evals_around;
 
   Eval current_gain = edges_evals_around - new_edge_eval;
+  // TAMS: при удалении job освобождается его service
+  current_gain.service = _input.jobs[route[0]].service;
   node_gains[v][0] = current_gain;
   Eval best_gain = current_gain;
   node_candidates[v] = 0;
@@ -220,6 +222,8 @@ void SolutionState::set_node_gains(const std::vector<Index>& route, Index v) {
     edge_evals_around_node[v][i] = edges_evals_around;
 
     current_gain = edges_evals_around - vehicle.eval(p_index, n_index);
+    // TAMS: при удалении job освобождается его service
+    current_gain.service = _input.jobs[route[i]].service;
     node_gains[v][i] = current_gain;
 
     if (best_gain < current_gain) {
@@ -262,6 +266,8 @@ void SolutionState::set_node_gains(const std::vector<Index>& route, Index v) {
   edge_evals_around_node[v][last_rank] = edges_evals_around;
 
   current_gain = edges_evals_around - new_edge_eval;
+  // TAMS: при удалении job освобождается его service
+  current_gain.service = _input.jobs[route[last_rank]].service;
   node_gains[v][last_rank] = current_gain;
 
   if (best_gain < current_gain) {
@@ -322,6 +328,8 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
   edge_evals_around_edge[v][0] = edges_evals_around;
 
   Eval current_gain = edges_evals_around - new_edge_eval;
+  // TAMS: при удалении edge освобождается service обоих jobs
+  current_gain.service = _input.jobs[route[0]].service + _input.jobs[route[1]].service;
   edge_gains[v][0] = current_gain;
   Eval best_gain = current_gain;
   edge_candidates[v] = 0;
@@ -345,6 +353,8 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
     edge_evals_around_edge[v][i] = edges_evals_around;
 
     current_gain = edges_evals_around - vehicle.eval(p_index, n_index);
+    // TAMS: при удалении edge освобождается service обоих jobs
+    current_gain.service = _input.jobs[route[i]].service + _input.jobs[route[i + 1]].service;
     edge_gains[v][i] = current_gain;
 
     if (best_gain < current_gain) {
@@ -388,6 +398,9 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
   edge_evals_around_edge[v][last_edge_rank] = edges_evals_around;
 
   current_gain = edges_evals_around - new_edge_eval;
+  // TAMS: при удалении edge освобождается service обоих jobs
+  current_gain.service = _input.jobs[route[last_edge_rank]].service +
+                         _input.jobs[route[last_edge_rank + 1]].service;
   edge_gains[v][last_edge_rank] = current_gain;
 
   if (best_gain < current_gain) {
@@ -457,6 +470,9 @@ void SolutionState::set_pd_gains(const std::vector<Index>& route, Index v) {
       pd_gains[v][pickup_rank] = previous_eval +
                                  vehicle.eval(pickup_index, delivery_index) +
                                  next_eval - new_edge_eval;
+      // TAMS: добавляем service обоих jobs (pickup + delivery)
+      pd_gains[v][pickup_rank].service = _input.jobs[route[pickup_rank]].service +
+                                         _input.jobs[route[delivery_rank]].service;
     } else {
       // Simply add both gains as neighbouring edges are disjoint.
       pd_gains[v][pickup_rank] =
