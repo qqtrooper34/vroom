@@ -102,6 +102,24 @@ void TwoOpt::compute_gain() {
     t_gain -= t_v.eval(new_last_t, end_t);
   }
 
+  // TAMS: compute service delta for both routes
+  // Source loses jobs [s_rank+1..end], gains jobs from target [t_rank+1..end]
+  // Target loses jobs [t_rank+1..end], gains jobs from source [s_rank+1..end]
+  Duration s_removed_service = 0;
+  Duration t_removed_service = 0;
+
+  for (Index i = s_rank + 1; i < s_route.size(); ++i) {
+    s_removed_service += _input.jobs[s_route[i]].service;
+  }
+  for (Index i = t_rank + 1; i < t_route.size(); ++i) {
+    t_removed_service += _input.jobs[t_route[i]].service;
+  }
+
+  // s_gain.service = removed from source - added to source (from target)
+  s_gain.service = s_removed_service - t_removed_service;
+  // t_gain.service = removed from target - added to target (from source)
+  t_gain.service = t_removed_service - s_removed_service;
+
   stored_gain = s_gain + t_gain;
   gain_computed = true;
 }

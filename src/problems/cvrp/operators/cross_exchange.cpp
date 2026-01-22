@@ -113,6 +113,9 @@ Eval CrossExchange::gain_upper_bound() {
   _normal_s_gain = _sol_state.edge_evals_around_edge[s_vehicle][s_rank] +
                    s_v.eval(s_index, s_after_index) - previous_cost -
                    next_cost - s_v.eval(t_index, t_after_index);
+  // TAMS: вычитаем service добавляемых t-jobs для корректной проверки max_work_time
+  _normal_s_gain.service -= _input.jobs[t_route[t_rank]].service +
+                            _input.jobs[t_route[t_rank + 1]].service;
 
   auto s_gain_upper_bound = _normal_s_gain;
 
@@ -121,6 +124,9 @@ Eval CrossExchange::gain_upper_bound() {
                        s_v.eval(s_index, s_after_index) -
                        reverse_previous_cost - reverse_next_cost -
                        s_v.eval(t_after_index, t_index);
+    // TAMS: вычитаем service добавляемых t-jobs
+    _reversed_s_gain.service -= _input.jobs[t_route[t_rank]].service +
+                                _input.jobs[t_route[t_rank + 1]].service;
 
     s_gain_upper_bound = std::max(_normal_s_gain, _reversed_s_gain);
   }
@@ -161,6 +167,9 @@ Eval CrossExchange::gain_upper_bound() {
   _normal_t_gain = _sol_state.edge_evals_around_edge[t_vehicle][t_rank] +
                    t_v.eval(t_index, t_after_index) - previous_cost -
                    next_cost - t_v.eval(s_index, s_after_index);
+  // TAMS: вычитаем service добавляемых s-jobs для корректной проверки max_work_time
+  _normal_t_gain.service -= _input.jobs[s_route[s_rank]].service +
+                            _input.jobs[s_route[s_rank + 1]].service;
 
   auto t_gain_upper_bound = _normal_t_gain;
 
@@ -169,6 +178,9 @@ Eval CrossExchange::gain_upper_bound() {
                        t_v.eval(t_index, t_after_index) -
                        reverse_previous_cost - reverse_next_cost -
                        t_v.eval(s_after_index, s_index);
+    // TAMS: вычитаем service добавляемых s-jobs
+    _reversed_t_gain.service -= _input.jobs[s_route[s_rank]].service +
+                                _input.jobs[s_route[s_rank + 1]].service;
 
     t_gain_upper_bound = std::max(_normal_t_gain, _reversed_t_gain);
   }

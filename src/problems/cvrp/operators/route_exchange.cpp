@@ -92,6 +92,22 @@ void RouteExchange::compute_gain() {
     s_gain.cost += s_v.fixed_cost();
   }
 
+  // TAMS: compute service delta for route exchange
+  // Source loses all its jobs, gains target's jobs
+  // Target loses all its jobs, gains source's jobs
+  Duration s_service = 0;
+  Duration t_service = 0;
+  for (const auto& job_rank : s_route) {
+    s_service += _input.jobs[job_rank].service;
+  }
+  for (const auto& job_rank : t_route) {
+    t_service += _input.jobs[job_rank].service;
+  }
+  // s_gain.service = s_service (freed from source) - t_service (added from target)
+  s_gain.service = s_service - t_service;
+  // t_gain.service = t_service (freed from target) - s_service (added from source)
+  t_gain.service = t_service - s_service;
+
   stored_gain = s_gain + t_gain;
   gain_computed = true;
 }

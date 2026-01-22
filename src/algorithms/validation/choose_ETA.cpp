@@ -1123,6 +1123,7 @@ Route choose_ETA(const Input& input,
   Amount sum_deliveries(input.zero_amount());
   UserDuration user_lead_time = 0;
   UserDuration user_delay = 0;
+  UserDuration user_total_service = 0;  // TAMS: для проверки max_work_time
   unsigned number_of_tasks = 0;
   std::unordered_set<VIOLATION> v_types;
 
@@ -1208,6 +1209,7 @@ Route choose_ETA(const Input& input,
 
       setup += current_setup;
       service += job.service;
+      user_total_service += utils::scale_to_user_duration(job.service);  // TAMS
       priority += job.priority;
 
       current_load += job.pickup;
@@ -1285,6 +1287,13 @@ Route choose_ETA(const Input& input,
       if (!v.ok_for_distance(current.distance)) {
         current.violations.types.insert(VIOLATION::MAX_DISTANCE);
         v_types.insert(VIOLATION::MAX_DISTANCE);
+      }
+      // TAMS: Проверка max_work_time (travel + service)
+      if (!v.ok_for_work_time(
+            utils::scale_from_user_duration(user_duration),
+            utils::scale_from_user_duration(user_total_service))) {
+        current.violations.types.insert(VIOLATION::MAX_WORK_TIME);
+        v_types.insert(VIOLATION::MAX_WORK_TIME);
       }
 
       switch (job.type) {
@@ -1467,6 +1476,13 @@ Route choose_ETA(const Input& input,
       if (!v.ok_for_distance(end_step.distance)) {
         end_step.violations.types.insert(VIOLATION::MAX_DISTANCE);
         v_types.insert(VIOLATION::MAX_DISTANCE);
+      }
+      // TAMS: Финальная проверка max_work_time (travel + service)
+      if (!v.ok_for_work_time(
+            utils::scale_from_user_duration(user_duration),
+            utils::scale_from_user_duration(user_total_service))) {
+        end_step.violations.types.insert(VIOLATION::MAX_WORK_TIME);
+        v_types.insert(VIOLATION::MAX_WORK_TIME);
       }
 
       break;

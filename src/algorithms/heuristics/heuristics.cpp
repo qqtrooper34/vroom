@@ -1068,6 +1068,17 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
       throw InputException("Маршрут превышает максимальное время в пути для транспорта " +
                            std::to_string(vehicle.id) + ".");
     }
+
+    // TAMS: Проверка max_work_time (travel + service)
+    Duration total_service = 0;
+    for (const auto& job_rank : job_ranks) {
+      total_service += utils::scale_from_user_duration(input.jobs[job_rank].service);
+    }
+    if (!vehicle.ok_for_work_time(eval_sum.duration, total_service)) {
+      throw InputException("Маршрут превышает максимальное рабочее время для транспорта " +
+                           std::to_string(vehicle.id) + ".");
+    }
+
     if (!vehicle.ok_for_distance(eval_sum.distance)) {
       throw InputException("Маршрут превышает максимальное расстояние для транспорта " +
                            std::to_string(vehicle.id) + ".");
@@ -1083,7 +1094,7 @@ void initial_routes(const Input& input, std::vector<Route>& routes) {
                            std::to_string(vehicle.id) + ".");
     }
 
-    // Now route is OK with regard to capacity, max_travel_time,
+    // Now route is OK with regard to capacity, max_travel_time, max_work_time,
     // max_tasks, precedence and skills constraints.
     if (!job_ranks.empty()) {
       if (!current_r.is_valid_addition_for_tw(input,

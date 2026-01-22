@@ -20,16 +20,18 @@ struct Eval {
   Cost cost;
   Duration duration;
   Distance distance;
+  Duration service;  // TAMS: service time для max_work_time
 
-  constexpr Eval() : cost(0), duration(0), distance(0){};
+  constexpr Eval() : cost(0), duration(0), distance(0), service(0){};
 
-  constexpr Eval(Cost cost, Duration duration = 0, Distance distance = 0)
-    : cost(cost), duration(duration), distance(distance){};
+  constexpr Eval(Cost cost, Duration duration = 0, Distance distance = 0, Duration service = 0)
+    : cost(cost), duration(duration), distance(distance), service(service){};
 
   Eval& operator+=(const Eval& rhs) {
     cost += rhs.cost;
     duration += rhs.duration;
     distance += rhs.distance;
+    service += rhs.service;  // TAMS
 
     return *this;
   }
@@ -38,12 +40,13 @@ struct Eval {
     cost -= rhs.cost;
     duration -= rhs.duration;
     distance -= rhs.distance;
+    service -= rhs.service;  // TAMS
 
     return *this;
   }
 
   Eval operator-() const {
-    return {-cost, -duration, -distance};
+    return {-cost, -duration, -distance, -service};  // TAMS
   }
 
   friend Eval operator+(Eval lhs, const Eval& rhs) {
@@ -57,8 +60,8 @@ struct Eval {
   }
 
   friend bool operator<(const Eval& lhs, const Eval& rhs) {
-    return std::tie(lhs.cost, lhs.duration, lhs.distance) <
-           std::tie(rhs.cost, rhs.duration, rhs.distance);
+    return std::tie(lhs.cost, lhs.duration, lhs.distance, lhs.service) <
+           std::tie(rhs.cost, rhs.duration, rhs.distance, rhs.service);  // TAMS
   }
 
   friend bool operator<=(const Eval& lhs, const Eval& rhs) {
@@ -67,20 +70,21 @@ struct Eval {
 
   friend bool operator==(const Eval& lhs, const Eval& rhs) {
     return lhs.cost == rhs.cost && lhs.duration == rhs.duration &&
-           lhs.distance == rhs.distance;
+           lhs.distance == rhs.distance && lhs.service == rhs.service;  // TAMS
   }
 
   friend bool operator!=(const Eval& lhs, const Eval& rhs) {
     return lhs.cost != rhs.cost || lhs.duration != rhs.duration ||
-           lhs.distance != rhs.distance;
+           lhs.distance != rhs.distance || lhs.service != rhs.service;  // TAMS
   }
 };
 
 constexpr Eval MAX_EVAL = {std::numeric_limits<Cost>::max(),
                            std::numeric_limits<Duration>::max(),
-                           std::numeric_limits<Distance>::max()};
-constexpr Eval NO_EVAL = {std::numeric_limits<Cost>::max(), 0, 0};
-constexpr Eval NO_GAIN = {std::numeric_limits<Cost>::min(), 0, 0};
+                           std::numeric_limits<Distance>::max(),
+                           std::numeric_limits<Duration>::max()};  // TAMS: +service
+constexpr Eval NO_EVAL = {std::numeric_limits<Cost>::max(), 0, 0, 0};  // TAMS: +service
+constexpr Eval NO_GAIN = {std::numeric_limits<Cost>::min(), 0, 0, 0};  // TAMS: +service
 
 } // namespace vroom
 

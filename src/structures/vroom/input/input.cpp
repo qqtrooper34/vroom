@@ -767,7 +767,11 @@ void Input::set_jobs_vehicles_evals() {
           vehicle.eval(last_job_index, vehicle.end.value().index());
       }
 
+      // TAMS: добавляем service time для корректной проверки max_work_time
+      current_eval.service = jobs[j].service;
       if (is_pickup) {
+        // Для P&D добавляем service обеих job
+        current_eval.service += jobs[j + 1].service;
         // Assign same eval to delivery.
         _jobs_vehicles_evals[j + 1][v] = current_eval;
       }
