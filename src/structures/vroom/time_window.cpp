@@ -7,8 +7,23 @@ All rights reserved (see LICENSE).
 
 */
 
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
 #include "structures/vroom/time_window.h"
 #include "utils/exception.h"
+
+namespace {
+std::string unix_to_local(uint32_t ts) {
+  std::time_t t = static_cast<std::time_t>(ts);
+  std::tm tm_buf;
+  localtime_r(&t, &tm_buf);
+  std::ostringstream oss;
+  oss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S");
+  return oss.str();
+}
+} // namespace
 
 namespace vroom {
 
@@ -27,8 +42,13 @@ TimeWindow::TimeWindow(UserDuration start, UserDuration end)
     end(utils::scale_from_user_duration(end)),
     length(utils::scale_from_user_duration(end - start)) {
   if (start > end) {
+    // TAMS: помимо unix-timestamp показываем читаемое local time
     throw InputException(
-      std::format("Invalid time window: [{}, {}]", start, end));
+      std::format("Invalid time window: [{} ({}), {} ({})]",
+                  unix_to_local(start),
+                  start,
+                  unix_to_local(end),
+                  end));
   }
 }
 
