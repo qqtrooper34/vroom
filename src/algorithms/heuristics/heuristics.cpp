@@ -44,9 +44,9 @@ inline bool is_valid_route_position(const Input& input,
       break;
     case ROUTE_POSITION::LAST:
       // LAST jobs must be inserted in last positions (rank >= route_size - last_count)
-      // LAST jobs cannot be the first job in an empty route
+      // Allow LAST job in empty route if it's the only option (fallback from init)
       if (route_size == 0) {
-        result = false;
+        result = true;
       } else {
         result = insertion_rank >= route_size - last_count;
       }
@@ -170,6 +170,36 @@ inline void seed_route(const Input& input,
         break;
       case NEAREST:
         nearest_cost = evals[job_rank][v_rank].cost;
+        break;
+      }
+    }
+  }
+
+  // TAMS: Fallback — если ВСЕ годные jobs имеют route_position=LAST,
+  // мы пропустили их все. Допустим one of them для инициализации.
+  if (!init_ok) {
+    for (const auto job_rank : unassigned) {
+      const auto& current_job = input.jobs[job_rank];
+      if (current_job.route_position != ROUTE_POSITION::LAST ||
+          current_job.type == JOB_TYPE::DELIVERY) {
+        continue;
+      }
+      if (!input.vehicle_ok_with_job(v_rank, job_rank) || job_not_ok(job_rank)) {
+        continue;
+      }
+      if (route.size() + 1 > vehicle.max_tasks) {
+        continue;
+      }
+      bool is_valid =
+        (vehicle.ok_for_range_bounds(evals[job_rank][v_rank])) &&
+        route.is_valid_addition_for_capacity(input,
+                                             current_job.pickup,
+                                             current_job.delivery,
+                                             0) &&
+        route.is_valid_addition_for_tw(input, job_rank, 0);
+      if (is_valid) {
+        init_ok = true;
+        best_job_rank = job_rank;
         break;
       }
     }
