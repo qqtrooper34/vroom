@@ -62,7 +62,7 @@ ThreeInsertions find_top_3_insertions(const Input& input,
         break;
       case ROUTE_POSITION::LAST:
         if (route_size == 0) {
-          position_valid = false;
+          position_valid = true; // Allow LAST in empty route
         } else {
           position_valid = rank >= route_size - last_count;
         }

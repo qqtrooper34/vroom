@@ -177,7 +177,7 @@ bool OrOpt::is_valid() {
       case ROUTE_POSITION::FIRST:
         return new_rank <= t_first_count;
       case ROUTE_POSITION::LAST:
-        if (t_route_size == 0) return false;
+        if (t_route_size == 0) return true; // Allow LAST in empty route
         return new_rank >= t_route_size - t_last_count;
       case ROUTE_POSITION::NONE:
         return (t_first_count == 0 || new_rank >= t_first_count) &&

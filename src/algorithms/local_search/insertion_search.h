@@ -23,9 +23,9 @@ inline bool is_valid_rank_for_route_position(const Input& input,
       // FIRST jobs must be in the first positions (rank <= first_count)
       return rank <= first_count;
     case ROUTE_POSITION::LAST:
-      // LAST jobs cannot be the first job in a route
+      // Allow LAST jobs in empty route (all-LAST scenario)
       if (route_size == 0) {
-        return false;
+        return true;
       }
       // LAST jobs must be in the last positions (rank >= route_size - last_count)
       return rank >= route_size - last_count;
@@ -158,6 +158,11 @@ RouteInsertion compute_best_insertion_pd(const Input& input,
 
   bool found_valid = false;
   for (unsigned d_rank = begin_d_rank; d_rank < end_d_rank; ++d_rank) {
+    // Check route_position constraint for shipment delivery insertion
+    if (!is_valid_rank_for_route_position(input, sol_state, j + 1, v, d_rank, route.size())) {
+      valid_delivery_insertions[d_rank] = false;
+      continue;
+    }
     d_adds[d_rank] =
       utils::addition_cost(input, j + 1, v_target, route.route, d_rank);
     if (result.eval < d_adds[d_rank]) {
@@ -177,6 +182,11 @@ RouteInsertion compute_best_insertion_pd(const Input& input,
   for (Index pickup_r = sol_state.insertion_ranks_begin[v][j];
        pickup_r < sol_state.insertion_ranks_end[v][j];
        ++pickup_r) {
+    // Check route_position constraint for shipment pickup insertion
+    if (!is_valid_rank_for_route_position(input, sol_state, j, v, pickup_r, route.size())) {
+      continue;
+    }
+
     Eval p_add =
       utils::addition_cost(input, j, v_target, route.route, pickup_r);
     if (result.eval < p_add) {

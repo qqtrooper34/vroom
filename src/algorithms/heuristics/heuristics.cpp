@@ -45,9 +45,9 @@ inline bool is_valid_route_position(const Input& input,
       break;
     case ROUTE_POSITION::LAST:
       // LAST jobs must be inserted in last positions (rank >= route_size - last_count)
-      // LAST jobs cannot be the first job in an empty route
+      // Allow LAST job in empty route if it's the only option (fallback from init)
       if (route_size == 0) {
-        result = false;
+        result = true;
       } else {
         result = insertion_rank >= route_size - last_count;
       }
@@ -147,6 +147,7 @@ Eval basic(const Input& input,
     if (init != INIT::NONE) {
       // Initialize current route with the "best" valid job.
       bool init_ok = false;
+      bool has_only_last_jobs = true; // Track if all eligible jobs are LAST
 
       Amount higher_amount(input.zero_amount());
       Cost furthest_cost = 0;
@@ -162,10 +163,12 @@ Eval basic(const Input& input,
         }
 
         // Skip LAST jobs during initialization - they should be added at the
-        // end of the route, not as the starting job
+        // end of the route, not as the starting job (unless ALL jobs are LAST)
         if (current_job.route_position == ROUTE_POSITION::LAST) {
           continue;
         }
+
+        has_only_last_jobs = false;
 
         bool is_pickup = (current_job.type == JOB_TYPE::PICKUP);
 
@@ -248,6 +251,35 @@ Eval basic(const Input& input,
         }
       }
 
+
+      // Fallback: if ALL eligible jobs have route_position=LAST, allow one to init
+      if (!init_ok && has_only_last_jobs) {
+        for (const auto job_rank : unassigned) {
+          const auto& current_job = input.jobs[job_rank];
+          if (current_job.route_position != ROUTE_POSITION::LAST ||
+              current_job.type == JOB_TYPE::DELIVERY) {
+            continue;
+          }
+          if (!input.vehicle_ok_with_job(v_rank, job_rank)) {
+            continue;
+          }
+          if (current_r.size() + 1 > vehicle.max_tasks) {
+            continue;
+          }
+          bool is_valid =
+            (vehicle.ok_for_range_bounds(evals[job_rank][v_rank])) &&
+            current_r.is_valid_addition_for_capacity(input,
+                                                     current_job.pickup,
+                                                     current_job.delivery,
+                                                     0) &&
+            current_r.is_valid_addition_for_tw(input, job_rank, 0);
+          if (is_valid) {
+            init_ok = true;
+            best_job_rank = job_rank;
+            break;
+          }
+        }
+      }
       if (init_ok) {
         if (input.jobs[best_job_rank].type == JOB_TYPE::SINGLE) {
           current_r.add(input, best_job_rank, 0);
@@ -346,6 +378,11 @@ Eval basic(const Input& input,
 
           for (unsigned d_rank = 0; d_rank <= current_r.route.size();
                ++d_rank) {
+            // Check route_position constraint for shipment delivery insertion
+            if (!is_valid_route_position(input, current_r, job_rank + 1, d_rank)) {
+              valid_delivery_insertions[d_rank] = false;
+              continue;
+            }
             d_adds[d_rank] = utils::addition_cost(input,
                                                   job_rank + 1,
                                                   vehicle,
@@ -358,6 +395,11 @@ Eval basic(const Input& input,
           }
 
           for (Index pickup_r = 0; pickup_r <= current_r.size(); ++pickup_r) {
+            // Check route_position constraint for shipment pickup insertion
+            if (!is_valid_route_position(input, current_r, job_rank, pickup_r)) {
+              continue;
+            }
+
             const auto p_add = utils::addition_cost(input,
                                                     job_rank,
                                                     vehicle,
@@ -617,6 +659,7 @@ Eval dynamic_vehicle_choice(const Input& input,
       // closest for current vehicle than to any other remaining
       // vehicle.
       bool init_ok = false;
+      bool has_only_last_jobs = true;
 
       Amount higher_amount(input.zero_amount());
       Cost furthest_cost = 0;
@@ -634,10 +677,12 @@ Eval dynamic_vehicle_choice(const Input& input,
         }
 
         // Skip LAST jobs during initialization - they should be added at the
-        // end of the route, not as the starting job
+        // end of the route, not as the starting job (unless ALL jobs are LAST)
         if (current_job.route_position == ROUTE_POSITION::LAST) {
           continue;
         }
+
+        has_only_last_jobs = false;
 
         bool is_pickup = (current_job.type == JOB_TYPE::PICKUP);
 
@@ -721,6 +766,35 @@ Eval dynamic_vehicle_choice(const Input& input,
         }
       }
 
+
+      // Fallback: if ALL eligible jobs have route_position=LAST, allow one to init
+      if (!init_ok && has_only_last_jobs) {
+        for (const auto job_rank : unassigned) {
+          const auto& current_job = input.jobs[job_rank];
+          if (current_job.route_position != ROUTE_POSITION::LAST ||
+              current_job.type == JOB_TYPE::DELIVERY) {
+            continue;
+          }
+          if (!input.vehicle_ok_with_job(v_rank, job_rank)) {
+            continue;
+          }
+          if (current_r.size() + 1 > vehicle.max_tasks) {
+            continue;
+          }
+          bool is_valid =
+            (vehicle.ok_for_range_bounds(evals[job_rank][v_rank])) &&
+            current_r.is_valid_addition_for_capacity(input,
+                                                     current_job.pickup,
+                                                     current_job.delivery,
+                                                     0) &&
+            current_r.is_valid_addition_for_tw(input, job_rank, 0);
+          if (is_valid) {
+            init_ok = true;
+            best_job_rank = job_rank;
+            break;
+          }
+        }
+      }
       if (init_ok) {
         if (input.jobs[best_job_rank].type == JOB_TYPE::SINGLE) {
           current_r.add(input, best_job_rank, 0);
@@ -819,6 +893,11 @@ Eval dynamic_vehicle_choice(const Input& input,
 
           for (unsigned d_rank = 0; d_rank <= current_r.route.size();
                ++d_rank) {
+            // Check route_position constraint for shipment delivery insertion
+            if (!is_valid_route_position(input, current_r, job_rank + 1, d_rank)) {
+              valid_delivery_insertions[d_rank] = false;
+              continue;
+            }
             d_adds[d_rank] = utils::addition_cost(input,
                                                   job_rank + 1,
                                                   vehicle,
@@ -831,6 +910,11 @@ Eval dynamic_vehicle_choice(const Input& input,
           }
 
           for (Index pickup_r = 0; pickup_r <= current_r.size(); ++pickup_r) {
+            // Check route_position constraint for shipment pickup insertion
+            if (!is_valid_route_position(input, current_r, job_rank, pickup_r)) {
+              continue;
+            }
+
             const auto p_add = utils::addition_cost(input,
                                                     job_rank,
                                                     vehicle,

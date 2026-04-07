@@ -593,7 +593,8 @@ void parse(Input& input, const std::string& input_str, bool geometry) {
                  skills,
                  priority,
                  get_time_windows(json_pickup),
-                 get_string(json_pickup, "description"));
+                 get_string(json_pickup, "description"),
+                 get_route_position(json_pickup));
 
       // Defining delivery job.
       auto& json_delivery = json_shipment["delivery"];
@@ -608,7 +609,8 @@ void parse(Input& input, const std::string& input_str, bool geometry) {
                    skills,
                    priority,
                    get_time_windows(json_delivery),
-                   get_string(json_delivery, "description"));
+                   get_string(json_delivery, "description"),
+                   get_route_position(json_delivery));
 
       input.add_shipment(pickup, delivery);
     }

@@ -76,9 +76,8 @@ bool Relocate::is_valid() {
       break;
     case ROUTE_POSITION::LAST:
       // LAST job must be inserted in last positions of target route
-      // Cannot be first job in empty route
       if (t_route_size == 0) {
-        position_valid = false;
+        position_valid = true; // Allow LAST in empty route
       } else {
         position_valid = t_rank >= t_route_size - t_last_count;
       }
