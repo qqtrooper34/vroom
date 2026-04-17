@@ -30,6 +30,7 @@ Vehicle::Vehicle(Id id,
                  const std::optional<UserDuration>& max_travel_time,
                  const std::optional<UserDistance>& max_distance,
                  const std::optional<UserDuration>& max_work_time,  // TAMS
+                 unsigned return_factor,  // TAMS
                  const std::vector<VehicleStep>& input_steps,
                  std::string type_str)
   : id(id),
@@ -56,6 +57,7 @@ Vehicle::Vehicle(Id id,
                                            [](const auto& b) {
                                              return b.max_load.has_value();
                                            })),
+    return_factor(return_factor),  // TAMS
     type_str(std::move(type_str)) {
   if (!static_cast<bool>(start) && !static_cast<bool>(end)) {
     throw InputException(
