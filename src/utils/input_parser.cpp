@@ -247,6 +247,23 @@ inline std::vector<Break> get_vehicle_breaks(const rapidjson::Value& v,
   return breaks;
 }
 
+// TAMS: parse return_factor (0-100, default 100)
+inline unsigned get_return_factor(const rapidjson::Value& v) {
+  if (v.HasMember("return_factor")) {
+    if (!v["return_factor"].IsUint()) {
+      throw InputException("Недопустимое значение return_factor для транспорта " +
+                           std::to_string(v["id"].GetUint64()) + ".");
+    }
+    unsigned val = v["return_factor"].GetUint();
+    if (val > 100) {
+      throw InputException("return_factor должен быть 0-100 для транспорта " +
+                           std::to_string(v["id"].GetUint64()) + ".");
+    }
+    return val;
+  }
+  return 100;
+}
+
 inline VehicleCosts get_vehicle_costs(const rapidjson::Value& v) {
   UserCost fixed = 0;
   UserCost per_hour = DEFAULT_COST_PER_HOUR;
@@ -444,6 +461,7 @@ inline Vehicle get_vehicle(const rapidjson::Value& json_vehicle,
                  get_value_for<UserDuration>(json_vehicle, "max_travel_time"),
                  get_value_for<UserDistance>(json_vehicle, "max_distance"),
                  get_value_for<UserDuration>(json_vehicle, "max_work_time"),  // TAMS
+                 get_return_factor(json_vehicle),  // TAMS
                  get_vehicle_steps(json_vehicle));
 }
 

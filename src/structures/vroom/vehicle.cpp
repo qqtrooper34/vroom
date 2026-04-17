@@ -30,6 +30,7 @@ Vehicle::Vehicle(Id id,
                  const std::optional<UserDuration>& max_travel_time,
                  const std::optional<UserDistance>& max_distance,
                  const std::optional<UserDuration>& max_work_time,  // TAMS
+                 unsigned return_factor,  // TAMS
                  const std::vector<VehicleStep>& input_steps)
   : id(id),
     start(start),
@@ -51,6 +52,7 @@ Vehicle::Vehicle(Id id,
     max_work_time(max_work_time.has_value()
                     ? utils::scale_from_user_duration(max_work_time.value())
                     : DEFAULT_MAX_WORK_TIME),  // TAMS
+    return_factor(return_factor),
     has_break_max_load(std::ranges::any_of(breaks, [](const auto& b) {
       return b.max_load.has_value();
     })) {

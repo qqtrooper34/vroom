@@ -65,6 +65,7 @@ struct Vehicle {
   const Distance max_distance;
   const Duration max_work_time;  // TAMS: Общее рабочее время (travel + service)
   const bool has_break_max_load;
+  const unsigned return_factor;  // TAMS: 0-100, scales cost of return-to-depot edge
   std::vector<VehicleStep> steps;
   std::unordered_map<Id, Index> break_id_to_rank;
 
@@ -87,6 +88,7 @@ struct Vehicle {
       std::optional<UserDistance>(),
     const std::optional<UserDuration>& max_work_time =
       std::optional<UserDuration>(),  // TAMS
+    unsigned return_factor = 100,  // TAMS: 0-100
     const std::vector<VehicleStep>& input_steps = std::vector<VehicleStep>());
 
   bool has_start() const;
@@ -114,9 +116,14 @@ struct Vehicle {
   }
 
   Eval eval(Index i, Index j) const {
-    return Eval(cost_wrapper.cost(i, j),
-                cost_wrapper.duration(i, j),
-                cost_wrapper.distance(i, j));
+    Eval e(cost_wrapper.cost(i, j),
+           cost_wrapper.duration(i, j),
+           cost_wrapper.distance(i, j));
+    // TAMS: apply return_factor when destination is vehicle end
+    if (return_factor < 100 && has_end() && j == end.value().index()) {
+      e.cost = e.cost * static_cast<Cost>(return_factor) / 100;
+    }
+    return e;
   }
 
   bool ok_for_travel_time(Duration d) const {

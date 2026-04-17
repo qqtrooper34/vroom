@@ -189,11 +189,12 @@ void SolutionState::set_node_gains(const std::vector<Index>& route, Index v) {
     // no new edge.
     if (route.size() > 1) {
       n_index = _input.jobs[route[1]].index();
+      next_eval = vehicle.eval(c_index, n_index);
     } else {
       assert(vehicle.has_end());
       n_index = vehicle.end.value().index();
+      next_eval = vehicle.eval(c_index, n_index);
     }
-    next_eval = vehicle.eval(c_index, n_index);
   }
 
   Eval edges_evals_around = previous_eval + next_eval;
@@ -249,7 +250,7 @@ void SolutionState::set_node_gains(const std::vector<Index>& route, Index v) {
     if (route.size() > 1) {
       p_index = _input.jobs[route[last_rank - 1]].index();
       previous_eval = vehicle.eval(p_index, c_index);
-      new_edge_eval = vehicle.eval(p_index, n_index);
+      new_edge_eval = vehicle.eval(p_index, vehicle.end.value().index());
     }
   } else {
     // There is a previous eval either from previous job or from start
@@ -310,6 +311,7 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
     } else {
       // route.size() is 2 and first edge is also the last.
       if (vehicle.has_end()) {
+        // TAMS: apply return_factor
         next_eval = vehicle.eval(after_c_index, vehicle.end.value().index());
       }
     }
@@ -318,11 +320,11 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
     // no new edge.
     if (route.size() > 2) {
       n_index = _input.jobs[route[2]].index();
+      next_eval = vehicle.eval(after_c_index, n_index);
     } else {
       assert(vehicle.has_end());
-      n_index = vehicle.end.value().index();
+      next_eval = vehicle.eval(after_c_index, vehicle.end.value().index());
     }
-    next_eval = vehicle.eval(after_c_index, n_index);
   }
 
   Eval edges_evals_around = previous_eval + next_eval;
@@ -375,13 +377,12 @@ void SolutionState::set_edge_gains(const std::vector<Index>& route, Index v) {
 
   if (vehicle.has_end()) {
     // There is a next step after last job.
-    n_index = vehicle.end.value().index();
-    next_eval = vehicle.eval(after_c_index, n_index);
+    next_eval = vehicle.eval(after_c_index, vehicle.end.value().index());
 
     if (route.size() > 2) {
       p_index = _input.jobs[route[last_edge_rank - 1]].index();
       previous_eval = vehicle.eval(p_index, c_index);
-      new_edge_eval = vehicle.eval(p_index, n_index);
+      new_edge_eval = vehicle.eval(p_index, vehicle.end.value().index());
     }
   } else {
     // There is a previous eval either from previous job or from start
