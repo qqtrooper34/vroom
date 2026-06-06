@@ -1,0 +1,20 @@
+{
+  "vehicles": [{
+    "id": 1,
+    "start": [37.617, 55.756],
+    "end": [37.617, 55.756],
+    "max_work_time": 3600,
+    "steps": [
+      {"type": "start"},
+      {"type": "job", "id": 1},
+      {"type": "job", "id": 2},
+      {"type": "job", "id": 3},
+      {"type": "end"}
+    ]
+  }],
+  "jobs": [
+    {"id": 1, "location": [37.65, 55.78], "service": 1800},
+    {"id": 2, "location": [37.58, 55.72], "service": 1800},
+    {"id": 3, "location": [37.70, 55.80], "service": 1800}
+  ]
+}

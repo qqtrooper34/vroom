@@ -1,0 +1,41 @@
+{
+  "vehicles": [
+    {
+      "id": 1,
+      "start_index": 0,
+      "end_index": 0,
+      "time_window": [1737352800, 1737396000]
+    }
+  ],
+  "jobs": [
+    {
+      "id": 112203,
+      "location_index": 1,
+      "service": 600,
+      "time_windows": [[1737352800, 1737367200]],
+      "route_position": "first"
+    },
+    {
+      "id": 112204,
+      "location_index": 1,
+      "service": 600,
+      "time_windows": [[1737356400, 1737378000]],
+      "route_position": "first"
+    },
+    {
+      "id": 112205,
+      "location_index": 2,
+      "service": 600,
+      "time_windows": [[1737352800, 1737396000]]
+    }
+  ],
+  "matrices": {
+    "car": {
+      "durations": [
+        [0, 1784, 2500],
+        [1784, 0, 1000],
+        [2500, 1000, 0]
+      ]
+    }
+  }
+}

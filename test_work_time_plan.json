@@ -1,0 +1,27 @@
+{
+  "vehicles": [{
+    "id": 1,
+    "start_index": 0,
+    "end_index": 0,
+    "max_work_time": 7200,
+    "steps": [
+      {"type": "start"},
+      {"type": "job", "id": 1},
+      {"type": "job", "id": 2},
+      {"type": "end"}
+    ]
+  }],
+  "jobs": [
+    {"id": 1, "location_index": 1, "service": 3600},
+    {"id": 2, "location_index": 2, "service": 3600}
+  ],
+  "matrices": {
+    "car": {
+      "durations": [
+        [0, 600, 1200],
+        [600, 0, 600],
+        [1200, 600, 0]
+      ]
+    }
+  }
+}

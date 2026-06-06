@@ -98,10 +98,10 @@ void RouteExchange::compute_gain() {
   Duration s_service = 0;
   Duration t_service = 0;
   for (const auto& job_rank : s_route) {
-    s_service += _input.jobs[job_rank].service;
+    s_service += _input.jobs[job_rank].services[s_v.type];
   }
   for (const auto& job_rank : t_route) {
-    t_service += _input.jobs[job_rank].service;
+    t_service += _input.jobs[job_rank].services[t_v.type];
   }
   // s_gain.service = s_service (freed from source) - t_service (added from target)
   s_gain.service = s_service - t_service;

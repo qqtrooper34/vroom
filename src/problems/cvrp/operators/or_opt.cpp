@@ -115,14 +115,14 @@ Eval OrOpt::gain_upper_bound() {
   _normal_t_gain = old_edge_cost - previous_cost - next_cost -
                    t_v.eval(s_index, after_s_index);
   // TAMS: вычитаем service добавляемых jobs для корректной проверки max_work_time
-  _normal_t_gain.service -= _input.jobs[s_route[s_rank]].service +
-                            _input.jobs[s_route[s_rank + 1]].service;
+  _normal_t_gain.service -= _input.jobs[s_route[s_rank]].services[s_v.type] +
+                            _input.jobs[s_route[s_rank + 1]].services[s_v.type];
 
   _reversed_t_gain = old_edge_cost - reverse_previous_cost - reverse_next_cost -
                      t_v.eval(after_s_index, s_index);
   // TAMS: вычитаем service добавляемых jobs
-  _reversed_t_gain.service -= _input.jobs[s_route[s_rank]].service +
-                              _input.jobs[s_route[s_rank + 1]].service;
+  _reversed_t_gain.service -= _input.jobs[s_route[s_rank]].services[s_v.type] +
+                              _input.jobs[s_route[s_rank + 1]].services[s_v.type];
 
   if (t_route.empty()) {
     _normal_t_gain.cost -= t_v.fixed_cost();

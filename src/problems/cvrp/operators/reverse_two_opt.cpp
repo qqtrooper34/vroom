@@ -146,10 +146,10 @@ void ReverseTwoOpt::compute_gain() {
   Duration t_removed_service = 0;  // service from target[0..t_rank]
 
   for (Index i = s_rank + 1; i < s_route.size(); ++i) {
-    s_removed_service += _input.jobs[s_route[i]].service;
+    s_removed_service += _input.jobs[s_route[i]].services[s_v.type];
   }
   for (Index i = 0; i <= t_rank; ++i) {
-    t_removed_service += _input.jobs[t_route[i]].service;
+    t_removed_service += _input.jobs[t_route[i]].services[t_v.type];
   }
 
   // s_gain.service = removed from source - added to source (from target)

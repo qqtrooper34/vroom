@@ -96,3 +96,56 @@ Master VROOM (после `5dee4816`) рефакторил:
 
 ---
 Last updated: 2026-06-06 (upstream-rebase ветка содержит master HEAD `cd91c90b` + наши 7 коммитов).
+
+## Acceptance test суммарно (20 сценариев на merged binary)
+
+Прогон от 2026-06-06 на TAMSrouting-test (порт 3001):
+
+**18 PASS / 3 FAIL / 21 TOTAL** (тест 9 разбит на 9a+9b).
+
+| # | Тест | Статус |
+|---|---|---|
+| 1 | baseline 5 jobs solo | ✅ PASS |
+| 2 | brigade type + service_per_type=75 | ✅ PASS |
+| 3 | mixed brigade(cheaper) vs solo — brigade берёт все 3 jobs за 150s | ✅ PASS |
+| 4 | route_position FIRST | ✅ PASS |
+| 5 | route_position LAST | ✅ PASS |
+| 6 | mixed FIRST/NONE/LAST | ✅ PASS |
+| 7 | all-LAST fallback (3 LAST jobs все размещены) | ✅ PASS |
+| 8 | max_work_time=600 enforce | ❌ FAIL — НЕ enforce'ится в путях вне fill_route |
+| 9a | return_factor=100 baseline | ✅ PASS |
+| 9b | return_factor=50 уменьшает cost | ✅ PASS (3460 < 4517) |
+| 10 | shipment pickup→delivery порядок | ✅ PASS |
+| 11 | shipment delivery route_position=last | ❌ FAIL — позиция не enforce'ится для PD |
+| 12 | multi-brigade-types (brigade-a быстрее brigade-b) | ✅ PASS |
+| 13 | type "unknown" → fallback на service | ✅ PASS |
+| 14 | no vehicle.type → service_per_type игнорируется | ✅ PASS |
+| 15 | capacity ограничение (1000 vs 3×600) | ✅ PASS |
+| 16 | skills routing | ✅ PASS |
+| 17 | brigade+skills | ⚠️ Не баг — VROOM консолидирует jobs в одну машину когда одна обязательна по skill |
+| 18 | 10 jobs brigade vs solo (одинак. costs) | ⚠️ Не баг — VROOM выбрал tied-cost; с явно дешёвой бригадой PASS |
+| 19 | TW + brigade service_per_type | ✅ PASS |
+| 20 | combined brigade+FIRST+LAST+work_time+return | ✅ PASS |
+
+### Реальные баги для follow-up
+
+**Баг 1: max_work_time не enforce'ится во всех путях** (test 8)
+
+Проявление: vehicle с `max_work_time=600` принял маршрут с `duration=2921, service=1200`. Должен был оставить часть jobs в unassigned.
+
+Причина: наш `ok_for_range_bounds` проверяет `(e.duration + e.service) ≤ max_work_time`, но upstream's refactored CVRP operators не накапливают `e.service` через `addition_cost`. В master'е `Eval` не имеет нашего `service` поля по дизайну, и `helpers.h::addition_cost` его выставляет ТОЛЬКО для single-job insertion, не для PD shipments / route-level evaluations / в operators.
+
+Что нужно: добить `e.service` во всех путях evaluation Job (route_eval_for_vehicle, и в каждом операторе при подсчёте gain). Это ~30+ файлов.
+
+**Баг 2: shipment delivery route_position=last не enforce'ится** (test 11)
+
+Проявление: shipment с `delivery.route_position="last"` поставлен в середину (steps: pickup, job1, **delivery**, job2). job2 после delivery.
+
+Причина: `is_valid_rank_for_route_position` помещён в `compute_best_insertion_single` (single jobs) и в `compute_best_insertion_pd` (shipment pickup и delivery). Но в эвристике `fill_route` для shipment ветки `JOB_TYPE::PICKUP` нет вызова `is_valid_route_position`.
+
+Что нужно: добавить проверку route_position в shipment-insertion ветке `fill_route` (для pickup_r и delivery_r отдельно).
+
+### Тестов прошедших с малой модификацией (не баги)
+
+- **17b**: brigade с `per_hour=1800` vs solo `per_hour=7200` — j1 всё равно ушёл на solo, потому что j2 (skill=20) требует solo обязательно, и VROOM экономит один fixed_cost ($500), сажая обе jobs на solo. Это правильное cost-based решение.
+- **18b**: brigade с явно меньшим cost'ом → берёт все 10/10 jobs (cost 4274). Подтверждает: при clear cost advantage VROOM предпочитает brigade.

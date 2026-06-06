@@ -421,6 +421,15 @@ inline Eval fill_route(const Input& input,
           route.route.size() + 1);
 
         for (unsigned d_rank = 0; d_rank <= route.route.size(); ++d_rank) {
+          // TAMS: route_position constraint для shipment delivery.
+          // Если у delivery route_position=first/last — фильтруем недопустимые d_rank.
+          if (!is_valid_route_position(input,
+                                       route,
+                                       job_rank + 1,
+                                       d_rank)) {
+            valid_delivery_insertions[d_rank] = 0;
+            continue;
+          }
           d_adds[d_rank] = utils::addition_cost(input,
                                                 job_rank + 1,
                                                 vehicle,
@@ -433,6 +442,13 @@ inline Eval fill_route(const Input& input,
         }
 
         for (Index pickup_r = 0; pickup_r <= route.size(); ++pickup_r) {
+          // TAMS: route_position constraint для shipment pickup.
+          if (!is_valid_route_position(input,
+                                       route,
+                                       job_rank,
+                                       pickup_r)) {
+            continue;
+          }
           const auto p_add = utils::addition_cost(input,
                                                   job_rank,
                                                   vehicle,

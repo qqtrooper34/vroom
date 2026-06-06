@@ -100,8 +100,8 @@ Eval MixedExchange::gain_upper_bound() {
   _normal_s_gain = _sol_state.edge_evals_around_node[s_vehicle][s_rank] -
                    previous_cost - next_cost - s_v.eval(t_index, t_after_index);
   // TAMS: корректируем service - удаляем 1 s-job, добавляем 2 t-jobs
-  _normal_s_gain.service -= _input.jobs[t_route[t_rank]].service +
-                            _input.jobs[t_route[t_rank + 1]].service;
+  _normal_s_gain.service -= _input.jobs[t_route[t_rank]].services[t_v.type] +
+                            _input.jobs[t_route[t_rank + 1]].services[t_v.type];
 
   auto s_gain_upper_bound = _normal_s_gain;
 
@@ -110,8 +110,8 @@ Eval MixedExchange::gain_upper_bound() {
                        reverse_previous_cost - reverse_next_cost -
                        s_v.eval(t_after_index, t_index);
     // TAMS: корректируем service - удаляем 1 s-job, добавляем 2 t-jobs
-    _reversed_s_gain.service -= _input.jobs[t_route[t_rank]].service +
-                                _input.jobs[t_route[t_rank + 1]].service;
+    _reversed_s_gain.service -= _input.jobs[t_route[t_rank]].services[t_v.type] +
+                                _input.jobs[t_route[t_rank + 1]].services[t_v.type];
 
     s_gain_upper_bound = std::max(_normal_s_gain, _reversed_s_gain);
   }
@@ -147,7 +147,7 @@ Eval MixedExchange::gain_upper_bound() {
   t_gain = _sol_state.edge_evals_around_edge[t_vehicle][t_rank] +
            t_v.eval(t_index, t_after_index) - previous_cost - next_cost;
   // TAMS: корректируем service - удаляем 2 t-jobs, добавляем 1 s-job
-  t_gain.service -= _input.jobs[s_route[s_rank]].service;
+  t_gain.service -= _input.jobs[s_route[s_rank]].services[s_v.type];
 
   _gain_upper_bound_computed = true;
 

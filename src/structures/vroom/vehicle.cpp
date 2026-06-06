@@ -161,7 +161,8 @@ Duration Vehicle::available_duration() const {
 
 bool Vehicle::has_range_bounds() const {
   return max_travel_time != DEFAULT_MAX_TRAVEL_TIME ||
-         max_distance != DEFAULT_MAX_DISTANCE;
+         max_distance != DEFAULT_MAX_DISTANCE ||
+         max_work_time != DEFAULT_MAX_WORK_TIME;  // TAMS
 }
 
 Index Vehicle::break_rank(Id break_id) const {
