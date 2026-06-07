@@ -46,7 +46,7 @@ INIT get_init(std::string_view s) {
   if (s == "EARLIEST_DEADLINE") {
     return EARLIEST_DEADLINE;
   }
-  throw InputException("Invalid heuristic parameter in command-line.");
+  throw InputException("Недопустимый эвристический параметр в командной строке.");
 }
 
 SORT get_sort(std::string_view s) {
@@ -56,7 +56,7 @@ SORT get_sort(std::string_view s) {
   if (s == "COST") {
     return SORT::COST;
   }
-  throw InputException("Invalid heuristic parameter in command-line.");
+  throw InputException("Недопустимый эвристический параметр в командной строке.");
 }
 
 #ifdef LOG_LS_OPERATORS
@@ -103,7 +103,7 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
   }
 
   if ((tokens.size() != 3 && tokens.size() != 4) || tokens[0].size() != 1) {
-    throw InputException("Invalid heuristic parameter in command-line.");
+    throw InputException("Недопустимый эвристический параметр в командной строке.");
   }
 
   auto init = get_init(tokens[1]);
@@ -113,12 +113,12 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
     auto h = std::stoul(tokens[0]);
 
     if (h != 0 && h != 1) {
-      throw InputException("Invalid heuristic parameter in command-line.");
+      throw InputException("Недопустимый эвристический параметр в командной строке.");
     }
 
     auto regret_coeff = std::stof(tokens[2]);
     if (regret_coeff < 0) {
-      throw InputException("Invalid heuristic parameter in command-line.");
+      throw InputException("Недопустимый эвристический параметр в командной строке.");
     }
 
     return HeuristicParameters(static_cast<HEURISTIC>(h),
@@ -126,7 +126,7 @@ HeuristicParameters str_to_heuristic_param(const std::string& s) {
                                regret_coeff,
                                sort);
   } catch (const std::exception&) {
-    throw InputException("Invalid heuristic parameter in command-line.");
+    throw InputException("Недопустимый эвристический параметр в командной строке.");
   }
 }
 
@@ -225,7 +225,7 @@ void check_priority(const Priority priority,
                     const std::string& type) {
   if (priority > MAX_PRIORITY) {
     throw InputException(
-      std::format("Invalid priority value for {} {}.", type, id));
+      std::format("Недопустимое значение приоритета для {} {}.", type, id));
   }
 }
 

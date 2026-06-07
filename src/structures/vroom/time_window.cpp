@@ -44,7 +44,7 @@ TimeWindow::TimeWindow(UserDuration start, UserDuration end)
   if (start > end) {
     // TAMS: помимо unix-timestamp показываем читаемое local time
     throw InputException(
-      std::format("Invalid time window: [{} ({}), {} ({})]",
+      std::format("Недопустимое временное окно: [{} ({}), {} ({})]",
                   unix_to_local(start),
                   start,
                   unix_to_local(end),

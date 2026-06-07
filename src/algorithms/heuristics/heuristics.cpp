@@ -840,7 +840,7 @@ void set_route(const Input& input,
   }
   if (!(single_jobs_deliveries <= vehicle.capacity)) {
     throw InputException(
-      std::format("Route over capacity for vehicle {}.", vehicle.id));
+      std::format("Маршрут превышает вместимость транспорта {}.", vehicle.id));
   }
 
   // Track load and travel time during the route for validity.
@@ -868,7 +868,7 @@ void set_route(const Input& input,
 
     if (!input.vehicle_ok_with_job(route.v_rank, job_rank)) {
       throw InputException(
-        std::format("Missing skill or step out of reach for vehicle {} and "
+        std::format("Отсутствует навык или шаг недостижим для транспорта {} and "
                     "job {}.",
                     vehicle.id,
                     job.id));
@@ -898,7 +898,7 @@ void set_route(const Input& input,
       auto search = expected_delivery_ranks.find(job_rank);
       if (search == expected_delivery_ranks.end()) {
         throw InputException(
-          std::format("Invalid shipment in route for vehicle {}.", vehicle.id));
+          std::format("Недопустимая доставка в маршруте для транспорта {}.", vehicle.id));
       }
       expected_delivery_ranks.erase(search);
 
@@ -912,7 +912,7 @@ void set_route(const Input& input,
     // Check validity after this step wrt capacity.
     if (!(current_load <= vehicle.capacity)) {
       throw InputException(
-        std::format("Route over capacity for vehicle {}.", vehicle.id));
+        std::format("Маршрут превышает вместимость транспорта {}.", vehicle.id));
     }
   }
 
@@ -924,21 +924,21 @@ void set_route(const Input& input,
   }
   if (!vehicle.ok_for_travel_time(eval_sum.duration)) {
     throw InputException(
-      std::format("Route over max_travel_time for vehicle {}.", vehicle.id));
+      std::format("Маршрут превышает максимальное время в пути для транспорта {}.", vehicle.id));
   }
   if (!vehicle.ok_for_distance(eval_sum.distance)) {
     throw InputException(
-      std::format("Route over max_distance for vehicle {}.", vehicle.id));
+      std::format("Маршрут превышает максимальное расстояние для транспорта {}.", vehicle.id));
   }
 
   if (vehicle.max_tasks < job_ranks.size()) {
     throw InputException(
-      std::format("Too many tasks for vehicle {}.", vehicle.id));
+      std::format("Слишком много заданий для транспорта{}.", vehicle.id));
   }
 
   if (!expected_delivery_ranks.empty()) {
     throw InputException(
-      std::format("Invalid shipment in route for vehicle {}.", vehicle.id));
+      std::format("Недопустимая доставка в маршруте для транспорта {}.", vehicle.id));
   }
 
   // Now route is OK with regard to capacity, max_travel_time,
@@ -951,7 +951,7 @@ void set_route(const Input& input,
                                         0,
                                         0)) {
       throw InputException(
-        std::format("Infeasible route for vehicle {}.", vehicle.id));
+        std::format("Невыполнимый маршрут для транспорта {}.", vehicle.id));
     }
 
     route.replace(input,

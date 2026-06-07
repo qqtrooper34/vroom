@@ -1,0 +1,62 @@
+Could not find route near location 	Не удалось найти маршрут рядом с местоположением
+Empty costs matrix for 	Пустая матрица стоимостей для
+Empty distances matrix for 	Пустая матрица расстояний для
+Empty durations matrix for 	Пустая матрица продолжительностей для
+Failed to connect to 	Не удалось подключиться к
+Failed to parse routing response.	Не удалось разобрать ответ маршрутизации.
+Infeasible route for vehicle 	Невыполнимый маршрут для транспорта
+Input root is not an object.	Корень входных данных не является объектом.
+Invalid 	Недопустимый
+Invalid break id 	Недопустимый идентификатор перерыва
+Invalid breaks for vehicle 	Недопустимые перерывы для транспорта
+Invalid costs for vehicle 	Недопустимые затраты для транспорта
+Invalid delivery id 	Недопустимый идентификатор доставки
+Invalid end_index for vehicle	Недопустимый индекс окончания для транспорта
+Invalid fixed cost for vehicle 	Недопустимая фиксированная стоимость для транспорта
+Invalid heuristic parameter in command-line.	Недопустимый эвристический параметр в командной строке.
+Invalid id in steps for vehicle 	Недопустимый идентификатор в шагах для транспорта
+Invalid job id 	Недопустимый идентификатор задания
+Invalid jobs or shipments.	Недопустимые задания или доставки.
+Invalid location for 	Недопустимое местоположение для
+Invalid location_index for 	Недопустимый индекс местоположения для
+Invalid matrix.	Недопустимая матрица.
+Invalid matrix entry.	Недопустимая запись матрицы.
+Invalid per_hour cost for vehicle 	Недопустимая стоимость за час для транспорта
+Invalid per_km cost for vehicle 	Недопустимая стоимость за км для транспорта
+Invalid pickup id 	Недопустимый идентификатор забора
+Invalid priority value.	Недопустимое значение приоритета.
+Invalid profile: 	Недопустимый профиль:
+Invalid routing response: 	Недопустимый ответ маршрутизации:
+Invalid service_at value.	Недопустимое значение service_at.
+Invalid service_after value.	Недопустимое значение service_after.
+Invalid service_before value.	Недопустимое значение service_before.
+Invalid shipment.	Недопустимая доставка.
+Invalid shipment in route for vehicle 	Недопустимая доставка в маршруте для транспорта
+Invalid skill value.	Недопустимое значение навыка.
+Invalid skills object.	Недопустимый объект навыков.
+Invalid speed factor: 	Недопустимый коэффициент скорости:
+Invalid start_index for vehicle 	Недопустимый индекс начала для транспорта
+Invalid steps for vehicle 	Недопустимые шаги для транспорта
+Invalid time-window.	Недопустимое временное окно.
+Invalid time window: [	Недопустимое временное окно: [
+Invalid time_windows array for object 	Недопустимый массив временных окон для объекта
+Invalid type in steps for vehicle 	Недопустимый тип в шагах для транспорта
+Invalid vehicles.	Недопустимые транспортные средства.
+Invalid or missing id for 	Недопустимый или отсутствующий идентификатор для
+Missing 	Отсутствует
+Missing delivery for shipment.	Отсутствует доставка для доставки.
+Missing pickup for shipment.	Отсутствует забор для доставки.
+Missing skill or step out of reach for vehicle 	Отсутствует навык или шаг недостижим для транспорта
+No task defined.	Задание не определено.
+No vehicle defined.	Транспорт не определён.
+Route geometry request with missing coordinates.	Запрос геометрии маршрута с отсутствующими координатами.
+Route over capacity for vehicle 	Маршрут превышает вместимость транспорта
+Route over max_distance for vehicle 	Маршрут превышает максимальное расстояние для транспорта
+Route over max_travel_time for vehicle 	Маршрут превышает максимальное время в пути для транспорта
+Too many tasks for vehicle 	Слишком много заданий для транспорта
+Unexpected matrices value.	Непредвиденное значение матриц.
+Unexpected matrix line length.	Непредвиденная длина строки матрицы.
+VROOM compiled without libglpk installed.	VROOM скомпилирован без установленной libglpk.
+VROOM compiled without libosrm installed.	VROOM скомпилирован без установленной libosrm.
+VROOM compiled without routing support.	VROOM скомпилирован без поддержки маршрутизации.
+Wrong job type.	Неверный тип задания.

@@ -61,21 +61,21 @@ Vehicle::Vehicle(Id id,
     type_str(std::move(type_str)) {
   if (!static_cast<bool>(start) && !static_cast<bool>(end)) {
     throw InputException(
-      std::format("No start or end specified for vehicle {}.", id));
+      std::format("Не указан старт или конец для транспорта {}.", id));
   }
 
   for (unsigned i = 0; i < breaks.size(); ++i) {
     const auto& b = breaks[i];
 
     if (break_id_to_rank.contains(b.id)) {
-      throw InputException(std::format("Duplicate break id: {}.", b.id));
+      throw InputException(std::format("Дублирующийся идентификатор перерыва: {}.", b.id));
     }
     break_id_to_rank[b.id] = i;
 
     if (b.max_load.has_value() &&
         b.max_load.value().size() != capacity.size()) {
       throw InputException(
-        std::format("Inconsistent break max_load size for break {}.", b.id));
+        std::format("Несогласованный размер max_load для перерыва {}.", b.id));
     }
   }
 
@@ -97,11 +97,11 @@ Vehicle::Vehicle(Id id,
     for (unsigned i = rank_after_start; i < input_steps.size(); ++i) {
       if (input_steps[i].type == START) {
         throw InputException(
-          std::format("Unexpected start in input steps for vehicle {}.", id));
+          std::format("Непредвиденный старт в шагах для транспорта {}.", id));
       }
       if (input_steps[i].type == END && (i != input_steps.size() - 1)) {
         throw InputException(
-          std::format("Unexpected end in input steps for vehicle {}.", id));
+          std::format("Непредвиденное окончание в шагах для транспорта {}.", id));
       }
 
       steps.push_back(input_steps[i]);

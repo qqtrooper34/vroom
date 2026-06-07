@@ -24,7 +24,7 @@
 При rebase upstream master автоматически дропнул 6 наших коммитов как уже-в-upstream:
 `5dcb23ee, cc95eec5, a75e33a6, 5e340d4a, 1622a941, 3b8ef440`.
 
-Коммит `3fa175b6` (русские переводы) был **пропущен** при rebase — нужно отдельно re-applied после стабилизации. Содержит только error-strings (UX), не функционально критично.
+Коммит `3fa175b6` (русские переводы) был **пропущен** при rebase, затем **re-applied 2026-06-07** (см. ниже раздел «Русские переводы»). Содержит только error-strings (UX), не функционально критично.
 
 ## Кастомные API-поля (наши + upstream)
 
@@ -149,3 +149,43 @@ Last updated: 2026-06-06 (upstream-rebase ветка содержит master HEA
 
 - **17b**: brigade с `per_hour=1800` vs solo `per_hour=7200` — j1 всё равно ушёл на solo, потому что j2 (skill=20) требует solo обязательно, и VROOM экономит один fixed_cost ($500), сажая обе jobs на solo. Это правильное cost-based решение.
 - **18b**: brigade с явно меньшим cost'ом → берёт все 10/10 jobs (cost 4274). Подтверждает: при clear cost advantage VROOM предпочитает brigade.
+
+## Русские переводы (re-applied 2026-06-07)
+
+Исходный коммит `3fa175b6` (русские translations error messages) был **пропущен** при первичном rebase и переприменён позже отдельной партией.
+
+**Что переведено** (всего 60+ строк, 0 английских осталось):
+- `Exception("...")` строковые литералы (heuristics, choose_ETA, http_wrapper, libosrm/osrm_wrappers, cost_wrapper, input, time_window, input_parser, helpers, main.cpp)
+- `Exception(std::format("...{}..."))` строки (vehicle.cpp:71, input.cpp:193/234/237, choose_ETA.cpp:995/1044)
+- Все новые строки, появившиеся в upstream после исходного 3fa175b6 (VROOM compiled without ..., No vehicle/task defined, Empty matrices, Unexpected matrix line length, Input root is not an object, и т.д.)
+
+**Где словарь** (для будущих re-rebase):
+- `i18n/ru.tsv` — TSV с парами `<English>\t<Russian>`, отсортирован по English. При следующем upstream-merge: прогнать словарь по тому же набору файлов через node-скрипт (см. ниже).
+
+**Применение словаря** при следующем rebase:
+```bash
+cd /home/trooper34/vroom
+node -e "
+const fs = require('fs');
+const pairs = fs.readFileSync('i18n/ru.tsv', 'utf8').trim().split('\n').map(l => l.split('\t'));
+const files = ['src/algorithms/heuristics/heuristics.cpp', 'src/algorithms/validation/choose_ETA.cpp',
+  'src/routing/http_wrapper.cpp', 'src/routing/libosrm_wrapper.cpp', 'src/routing/osrm_routed_wrapper.cpp',
+  'src/structures/vroom/cost_wrapper.cpp', 'src/structures/vroom/input/input.cpp', 'src/structures/vroom/time_window.cpp',
+  'src/structures/vroom/vehicle.cpp', 'src/utils/helpers.cpp', 'src/utils/input_parser.cpp', 'src/main.cpp'];
+for (const f of files) {
+  let s = fs.readFileSync(f, 'utf8'); let c = 0;
+  for (const [en, ru] of pairs) {
+    const n = '\"' + en, r = '\"' + ru;
+    if (s.includes(n)) { c += s.split(n).length - 1; s = s.split(n).join(r); }
+  }
+  if (c > 0) { fs.writeFileSync(f, s); console.log(f, c); }
+}
+"
+```
+После прогона: `grep -rEn '(Input|Routing)Exception\(' src/ --include='*.cpp' --include='*.h' | grep '\"[A-Za-z]' | grep -v 'VROOM\|libOSRM'` должен дать пусто.
+
+**Проверка перевода работает**:
+```bash
+echo '{"vehicles":[{"id":1}],"jobs":[{"id":2,"location":[37.6,55.7]}]}' | bin/vroom
+# → {"code":2,"error":"Не указан старт или конец для транспорта 1."}
+```

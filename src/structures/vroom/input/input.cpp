@@ -39,11 +39,11 @@ void Input::set_geometry(bool geometry) {
 
 void Input::add_routing_wrapper(const std::string& profile) {
 #if !USE_ROUTING
-  throw RoutingException("VROOM compiled without routing support.");
+  throw RoutingException("VROOM скомпилирован без поддержки маршрутизации.");
 #else
 
   if (!_has_all_coordinates) {
-    throw InputException("Missing coordinates for routing engine.");
+    throw InputException("Отсутствует coordinates for routing engine.");
   }
 
   assert(std::find_if(_routing_wrappers.begin(),
@@ -58,7 +58,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     // Use osrm-routed.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::OsrmRoutedWrapper>(profile, search->second);
@@ -69,18 +69,18 @@ void Input::add_routing_wrapper(const std::string& profile) {
     try {
       routing_wrapper = std::make_unique<routing::LibosrmWrapper>(profile);
     } catch (const osrm::exception& e) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     break;
 #else
     // Attempt to use libosrm while compiling without it.
-    throw RoutingException("VROOM compiled without libosrm installed.");
+    throw RoutingException("VROOM скомпилирован без установленной libosrm.");
 #endif
   case ROUTER::ORS: {
     // Use ORS http wrapper.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::OrsWrapper>(profile, search->second);
@@ -89,7 +89,7 @@ void Input::add_routing_wrapper(const std::string& profile) {
     // Use Valhalla http wrapper.
     auto search = _servers.find(profile);
     if (search == _servers.end()) {
-      throw InputException("Invalid profile: " + profile + ".");
+      throw InputException("Недопустимый профиль: " + profile + ".");
     }
     routing_wrapper =
       std::make_unique<routing::ValhallaWrapper>(profile, search->second);
@@ -127,7 +127,7 @@ void Input::check_job(Job& job) {
     _has_custom_location_index = has_location_index;
   } else {
     if (_has_custom_location_index != has_location_index) {
-      throw InputException("Missing location index.");
+      throw InputException("Отсутствует location index.");
     }
   }
 
@@ -174,23 +174,23 @@ void Input::check_job(Job& job) {
 
 void Input::run_basic_checks() const {
   if (vehicles.empty()) {
-    throw InputException("No vehicle defined.");
+    throw InputException("Транспорт не определён.");
   }
   if (jobs.empty()) {
-    throw InputException("No task defined.");
+    throw InputException("Задание не определено.");
   }
   if (_geometry && !_all_locations_have_coords) {
     // Early abort when info is required with missing coordinates.
-    throw InputException("Route geometry request with missing coordinates.");
+    throw InputException("Запрос геометрии маршрута с отсутствующими координатами.");
   }
 }
 
 void Input::add_job(const Job& job) {
   if (job.type != JOB_TYPE::SINGLE) {
-    throw InputException("Wrong job type.");
+    throw InputException("Неверный тип задания.");
   }
   if (job_id_to_rank.contains(job.id)) {
-    throw InputException(std::format("Duplicate job id: {}.", job.id));
+    throw InputException(std::format("Дублирующийся идентификатор задания: {}.", job.id));
   }
   job_id_to_rank[job.id] = jobs.size();
   jobs.push_back(job);
@@ -231,10 +231,10 @@ void Input::add_shipment(const Job& pickup, const Job& delivery) {
   }
 
   if (pickup.type != JOB_TYPE::PICKUP) {
-    throw InputException(std::format("Wrong type for pickup {}.", pickup.id));
+    throw InputException(std::format("Неверный тип для забора {}.", pickup.id));
   }
   if (pickup_id_to_rank.contains(pickup.id)) {
-    throw InputException(std::format("Duplicate pickup id: {}.", pickup.id));
+    throw InputException(std::format("Дублирующийся идентификатор забора: {}.", pickup.id));
   }
   pickup_id_to_rank[pickup.id] = jobs.size();
   jobs.push_back(pickup);
@@ -246,7 +246,7 @@ void Input::add_shipment(const Job& pickup, const Job& delivery) {
   }
   if (delivery_id_to_rank.contains(delivery.id)) {
     throw InputException(
-      std::format("Duplicate delivery id: {}.", delivery.id));
+      std::format("Дублирующийся идентификатор доставки: {}.", delivery.id));
   }
   delivery_id_to_rank[delivery.id] = jobs.size();
   jobs.push_back(delivery);
@@ -316,7 +316,7 @@ void Input::add_vehicle(const Vehicle& vehicle) {
     if (current_v.has_start() && (has_location_index != end_loc.user_index())) {
       // Start and end provided in a non-consistent manner with regard
       // to location index definition.
-      throw InputException("Missing start_index or end_index.");
+      throw InputException("Отсутствует start_index or end_index.");
     }
 
     has_location_index = end_loc.user_index();
@@ -364,7 +364,7 @@ void Input::add_vehicle(const Vehicle& vehicle) {
     _has_custom_location_index = has_location_index;
   } else {
     if (_has_custom_location_index != has_location_index) {
-      throw InputException("Missing location index.");
+      throw InputException("Отсутствует location index.");
     }
   }
 
@@ -412,7 +412,7 @@ void Input::add_vehicle(const Vehicle& vehicle) {
 void Input::set_durations_matrix(const std::string& profile,
                                  Matrix<UserDuration>&& m) {
   if (m.size() == 0) {
-    throw InputException("Empty durations matrix for " + profile + " profile.");
+    throw InputException("Пустая матрица продолжительностей для " + profile + " profile.");
   }
   _durations_matrices.insert_or_assign(profile, std::move(m));
 }
@@ -420,14 +420,14 @@ void Input::set_durations_matrix(const std::string& profile,
 void Input::set_distances_matrix(const std::string& profile,
                                  Matrix<UserDistance>&& m) {
   if (m.size() == 0) {
-    throw InputException("Empty distances matrix for " + profile + " profile.");
+    throw InputException("Пустая матрица расстояний для " + profile + " profile.");
   }
   _distances_matrices.insert_or_assign(profile, std::move(m));
 }
 
 void Input::set_costs_matrix(const std::string& profile, Matrix<UserCost>&& m) {
   if (m.size() == 0) {
-    throw InputException("Empty costs matrix for " + profile + " profile.");
+    throw InputException("Пустая матрица стоимостей для " + profile + " profile.");
   }
   _costs_matrices.insert_or_assign(profile, std::move(m));
 }
@@ -860,7 +860,7 @@ void Input::set_vehicle_steps_ranks() {
         auto search = current_vehicle.break_id_to_rank.find(step.id);
         if (search == current_vehicle.break_id_to_rank.end()) {
           throw InputException(
-            std::format("Invalid break id {} for vehicle {}.",
+            std::format("Недопустимый идентификатор перерыва {} for vehicle {}.",
                         step.id,
                         current_vehicle.id));
         }
@@ -874,7 +874,7 @@ void Input::set_vehicle_steps_ranks() {
           auto search = job_id_to_rank.find(step.id);
           if (search == job_id_to_rank.end()) {
             throw InputException(
-              std::format("Invalid job id {} for vehicle {}.",
+              std::format("Недопустимый идентификатор задания {} for vehicle {}.",
                           step.id,
                           current_vehicle.id));
           }
@@ -893,7 +893,7 @@ void Input::set_vehicle_steps_ranks() {
           auto search = pickup_id_to_rank.find(step.id);
           if (search == pickup_id_to_rank.end()) {
             throw InputException(
-              std::format("Invalid pickup id {} for vehicle {}.",
+              std::format("Недопустимый идентификатор забора {} for vehicle {}.",
                           step.id,
                           current_vehicle.id));
           }
@@ -913,7 +913,7 @@ void Input::set_vehicle_steps_ranks() {
           auto search = delivery_id_to_rank.find(step.id);
           if (search == delivery_id_to_rank.end()) {
             throw InputException(
-              std::format("Invalid delivery id {} for vehicle {}.",
+              std::format("Недопустимый идентификатор доставки {} for vehicle {}.",
                           step.id,
                           current_vehicle.id));
           }
@@ -1003,7 +1003,7 @@ void Input::set_matrices(unsigned nb_thread, bool sparse_filling) {
   if ((!_durations_matrices.empty() || !_distances_matrices.empty() ||
        !_costs_matrices.empty()) &&
       !_has_custom_location_index) {
-    throw InputException("Missing location index.");
+    throw InputException("Отсутствует location index.");
   }
   if ((_durations_matrices.empty() && _costs_matrices.empty()) &&
       _has_custom_location_index) {
@@ -1019,7 +1019,7 @@ void Input::set_matrices(unsigned nb_thread, bool sparse_filling) {
     // Distances matrices should be either always or never provided.
     for (const auto& profile : _profiles) {
       if (!_distances_matrices.contains(profile)) {
-        throw InputException("Missing distances matrix for " + profile +
+        throw InputException("Отсутствует distances matrix for " + profile +
                              " profile.");
       }
     }
@@ -1324,7 +1324,7 @@ Solution Input::check(unsigned nb_thread) {
   return sol;
 #else
   // Attempt to use libglpk while compiling without it.
-  throw InputException("VROOM compiled without libglpk installed.");
+  throw InputException("VROOM скомпилирован без установленной libglpk.");
   // Silence -Wunused-parameter warning.
   (void)nb_thread;
 #endif

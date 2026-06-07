@@ -50,7 +50,7 @@ void throw_error(osrm::json::Object& result,
                                 message.size() - snapping_error_base.size()));
     auto coordinates =
       std::format("[{},{}]", locs[error_loc].lon(), locs[error_loc].lat());
-    throw RoutingException("Could not find route near location " + coordinates);
+    throw RoutingException("Не удалось найти маршрут рядом с местоположением " + coordinates);
   }
 
   // Other error in response.

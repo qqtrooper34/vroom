@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
       std::ofstream out_stream(output_file);
       if (!out_stream) {
         const auto exc =
-          vroom::InputException("Can't write to file: " + output_file);
+          vroom::InputException("Не удалось записать в файл: " + output_file);
         std::cerr << "[Error] " << exc.message << std::endl;
         vroom::io::write_to_json(exc);
         exit(exc.error_code);
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     cl_args.router = vroom::ROUTER::VALHALLA;
   } else if (!router_arg.empty() && router_arg != "osrm") {
     const auto e =
-      vroom::InputException("Invalid routing engine: " + router_arg + ".");
+      vroom::InputException("Недопустимый движок маршрутизации: " + router_arg + ".");
     std::cerr << "[Error] " << e.message << std::endl;
     vroom::io::write_to_json(e, cl_args.output_file);
     exit(e.error_code);
@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     const std::ifstream ifs(cl_args.input_file);
     if (!ifs) {
       const auto exc =
-        vroom::InputException("Can't read file: " + cl_args.input_file);
+        vroom::InputException("Не удалось прочитать файл: " + cl_args.input_file);
       std::cerr << "[Error] " << exc.message << std::endl;
       vroom::io::write_to_json(exc, cl_args.output_file);
       exit(exc.error_code);
@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
   catch (const osrm::exception& e) {
     // In case of an unhandled routing error.
     const auto exc =
-      vroom::RoutingException("Routing problem: " + std::string(e.what()));
+      vroom::RoutingException("Проблема маршрутизации: " + std::string(e.what()));
     std::cerr << "[Error] " << exc.message << std::endl;
     vroom::io::write_to_json(exc, cl_args.output_file);
     exit(exc.error_code);

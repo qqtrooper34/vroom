@@ -56,11 +56,11 @@ std::string get_json(const std::string& response) {
   // Removing headers.
   auto start = response.find('{');
   if (start == std::string::npos) {
-    throw RoutingException("Invalid routing response: " + response);
+    throw RoutingException("Недопустимый ответ маршрутизации: " + response);
   }
   auto end = response.rfind('}');
   if (end == std::string::npos) {
-    throw RoutingException("Invalid routing response: " + response);
+    throw RoutingException("Недопустимый ответ маршрутизации: " + response);
   }
 
   return response.substr(start, end - start + 1);
@@ -83,7 +83,7 @@ std::string HttpWrapper::send_then_receive(const std::string& query) const {
 
     set_response(s, response);
   } catch (std::system_error&) {
-    throw RoutingException("Failed to connect to " + _server.host + ":" +
+    throw RoutingException("Не удалось подключиться к " + _server.host + ":" +
                            _server.port);
   }
 
@@ -110,7 +110,7 @@ std::string HttpWrapper::ssl_send_then_receive(const std::string& query) const {
 
     set_response(ssock, response);
   } catch (std::system_error&) {
-    throw RoutingException("Failed to connect to " + _server.host + ":" +
+    throw RoutingException("Не удалось подключиться к " + _server.host + ":" +
                            _server.port);
   }
 
@@ -126,7 +126,7 @@ void HttpWrapper::parse_response(rapidjson::Document& json_result,
                                  const std::string& json_content) {
   json_result.Parse(json_content.c_str());
   if (json_result.HasParseError()) {
-    throw RoutingException("Failed to parse routing response.");
+    throw RoutingException("Не удалось разобрать ответ маршрутизации.");
   }
 }
 
@@ -142,12 +142,12 @@ Matrices HttpWrapper::get_matrices(const std::vector<Location>& locs) const {
   this->check_response(json_result, locs, _matrix_service);
 
   if (!json_result.HasMember(_matrix_durations_key.c_str())) {
-    throw RoutingException("Missing " + _matrix_durations_key + ".");
+    throw RoutingException("Отсутствует " + _matrix_durations_key + ".");
   }
   assert(json_result[_matrix_durations_key.c_str()].Size() == m_size);
 
   if (!json_result.HasMember(_matrix_distances_key.c_str())) {
-    throw RoutingException("Missing " + _matrix_distances_key + ".");
+    throw RoutingException("Отсутствует " + _matrix_distances_key + ".");
   }
   assert(json_result[_matrix_distances_key.c_str()].Size() == m_size);
 

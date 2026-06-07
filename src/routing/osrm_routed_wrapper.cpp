@@ -78,7 +78,7 @@ void OsrmRoutedWrapper::check_response(const rapidjson::Document& json_result,
       const auto coordinates = std::format("[{:.6f},{:.6f}]",
                                            locs[error_loc].lon(),
                                            locs[error_loc].lat());
-      throw RoutingException("Could not find route near location " +
+      throw RoutingException("Не удалось найти маршрут рядом с местоположением " +
                              coordinates);
     }
 
