@@ -1477,9 +1477,12 @@ Route choose_ETA(const Input& input,
         end_step.violations.types.insert(VIOLATION::MAX_DISTANCE);
         v_types.insert(VIOLATION::MAX_DISTANCE);
       }
-      // TAMS: Финальная проверка max_work_time (travel + service)
+      // TAMS: Финальная проверка max_work_time — фактическая смена
+      // (travel + service + waiting), как её видит клиент по выезду
+      // и возврату.
       if (!v.ok_for_work_time(
-            utils::scale_from_user_duration(user_duration),
+            utils::scale_from_user_duration(user_duration +
+                                            user_waiting_time),
             utils::scale_from_user_duration(user_total_service))) {
         end_step.violations.types.insert(VIOLATION::MAX_WORK_TIME);
         v_types.insert(VIOLATION::MAX_WORK_TIME);

@@ -143,6 +143,15 @@ struct Vehicle {
     return (travel + service) <= max_work_time;
   }
 
+  // TAMS: max_work_time задан пользователем (иначе DEFAULT = «без лимита»).
+  bool has_max_work_time() const;
+
+  // TAMS: span-вариант лимита — фактическая длительность смены
+  // (выезд → возврат), включая ожидания открытия окон между точками.
+  bool ok_for_work_span(Duration span) const {
+    return span <= max_work_time;
+  }
+
   bool ok_for_range_bounds(const Eval& e) const {
     assert(0 <= e.duration && 0 <= e.distance && 0 <= e.service);
     // TAMS: добавлена проверка max_work_time (travel + service)

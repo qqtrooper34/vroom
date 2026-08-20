@@ -770,6 +770,17 @@ bool TWRoute::is_valid_addition_for_tw(const Input& input,
     }
   }
 
+  // TAMS: span-лимит смены — max_work_time с учётом ожиданий открытия
+  // окон между точками (выезд → возврат). Консервативная оценка по
+  // схеме «выезд отложен к началу обслуживания первой точки»; для
+  // машин с breaks не применяется (семантика ожиданий на перерывах
+  // не покрыта, TAMS-пейлоады vehicle breaks не используют).
+  const bool check_span =
+    v.has_max_work_time() && v.breaks.empty() && first_job < last_job;
+  const Duration travel_to_first_inserted = current.travel;
+  Duration first_service_start = 0;
+  bool first_service_start_set = false;
+
   // Determine break range between first_rank and last_rank.
   Index current_break = breaks_counts[first_rank] - breaks_at_rank[first_rank];
   const Index last_break = breaks_counts[last_rank];
@@ -852,6 +863,12 @@ bool TWRoute::is_valid_addition_for_tw(const Input& input,
       current.location_index = j.index();
       current.earliest =
         std::max(current.earliest, j_tw->start) + job_action_time;
+
+      // TAMS: начало обслуживания первой вставляемой точки (для span).
+      if (check_span && !first_service_start_set) {
+        first_service_start = current.earliest - job_action_time;
+        first_service_start_set = true;
+      }
 
       if (check_max_load) {
         assert(j.delivery <= current_load);
@@ -1002,6 +1019,47 @@ bool TWRoute::is_valid_addition_for_tw(const Input& input,
           next_after.latest) {
         return false;
       }
+    }
+  }
+
+  // TAMS: проверка span-лимита смены. Верхняя оценка нового конца
+  // маршрута: точный конец при вставке в хвост, иначе старый
+  // earliest_end + сдвиг в точке склейки (ожидания ниже по маршруту
+  // могут сдвиг только поглотить). Выезд — отложенный к началу
+  // обслуживания первой точки (ровно так строит расписание
+  // format_route, дальше он может его лишь дополнительно ужать).
+  if (check_span) {
+    Duration new_end;
+    if (last_rank == route.size()) {
+      new_end = current.earliest + next.travel;
+    } else {
+      const Duration arrival_after = current.earliest + next.travel;
+      const Duration shift = (arrival_after > earliest[last_rank])
+                               ? arrival_after - earliest[last_rank]
+                               : 0;
+      new_end = earliest_end + shift;
+    }
+
+    Duration departure = 0;
+    bool have_departure = false;
+    if (first_rank == 0) {
+      if (first_service_start_set) {
+        assert(travel_to_first_inserted <= first_service_start);
+        departure = first_service_start - travel_to_first_inserted;
+        have_departure = true;
+      }
+    } else {
+      const Duration start_travel =
+        has_start ? v.duration(v.start.value().index(),
+                               input.jobs[route[0]].index())
+                  : 0;
+      assert(start_travel <= earliest[0]);
+      departure = earliest[0] - start_travel;
+      have_departure = true;
+    }
+
+    if (have_departure && !v.ok_for_work_span(new_end - departure)) {
+      return false;
     }
   }
 

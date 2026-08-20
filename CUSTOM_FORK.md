@@ -2,6 +2,29 @@
 
 История кастомных модификаций нашего форка VROOM поверх upstream master.
 
+## 2026-08-10: max_work_time = span смены (включая ожидания)
+
+Ранее `max_work_time` ограничивал только travel + service — ожидания открытия
+окон между точками не считались, и при редких/поздних окнах строились маршруты
+с фактической сменой до 14 ч при лимите 9 ч (Simple Wine, прогон 202).
+
+- `vehicle.h`: `has_max_work_time()`, `ok_for_work_span(span)`.
+- `tw_route.cpp` `is_valid_addition_for_tw` (range-версия): консервативная
+  O(1)-проверка span кандидата — новый конец маршрута (точный при вставке в
+  хвост, иначе `earliest_end + сдвиг в точке склейки`) минус отложенный выезд
+  (`начало обслуживания первой точки − travel до неё`, ровно как строит
+  расписание `format_route`). Для машин с vehicle breaks проверка отключена
+  (TAMS-пейлоады их не используют). Удаления span не проверяют (не ухудшают).
+- `choose_ETA.cpp`: в финальную plan-mode проверку MAX_WORK_TIME добавлен
+  `user_waiting_time`.
+
+Регрессия: test_work_time / test_plan_work_time / test_first_waiting[2] — PASS
+(поведение без лимита и без TW не изменилось). Реальный payload 202/1 (2911
+jobs, 181 veh, Selectel): нарушения переданного лимита 17 → **0**, худший span
+159% → 110% карточного (остаток — диспетчерский maxTimeScale=110), ожидание
+78ч → 48ч, unassigned 17 → 35 (+18 — честная цена лимита), cost +0.5%,
+время решения ~без изменений.
+
 ## Текущее состояние
 
 - **Production**: ветка `my-customizations`, бинарь `/home/trooper34/vroom/bin/vroom`. Порт 3000 (PM2 process `TAMSrouting`).

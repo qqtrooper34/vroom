@@ -165,6 +165,11 @@ bool Vehicle::has_range_bounds() const {
          max_work_time != DEFAULT_MAX_WORK_TIME;  // TAMS
 }
 
+// TAMS
+bool Vehicle::has_max_work_time() const {
+  return max_work_time != DEFAULT_MAX_WORK_TIME;
+}
+
 Index Vehicle::break_rank(Id break_id) const {
   auto search = break_id_to_rank.find(break_id);
   assert(search != break_id_to_rank.end());
